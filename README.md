@@ -6,11 +6,16 @@
 
 ## Python虚拟环境
 
-在vscode中按下`command+shfit+p`选择python解释器，在选择之前创建python虚拟环境，创建后再次选择按下`command+shfit+p`选择虚拟环境中的python解释器，此模板创建时的python版本为`Python 3.9.6`
+1. 在vscode中按下`command+shfit+p`选择python解释器
+2. 创建python虚拟环境
+3. 再次按下`command+shfit+p`选择虚拟环境中的python解释器
+
+> 此模板创建时的python版本为`Python 3.9.6`
 
 ## 数据库使用
 
-工程内置MySQL的工具类，见db/mysql_config路径，同时支持事务控制，见db/transaction路径
+1. MySQL的工具类，内置驱动，见`db/mysql_config`
+2. 事务控制见`db/transaction`
 
 ## 依赖
 
