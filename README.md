@@ -4,6 +4,31 @@
 
 提供给其他python应用一个统一的框架，包含环境配置、数据库连接、日志、模块集成
 
+## 配置文件
+
+结构：
+
+```bash
+pythonProjectTemplate
+├── config
+│   ├── __init__.py
+│   ├── config.py
+│   ├── dev.yaml
+│   ├── prod.yaml
+│   └── test.yaml
+├── env.yaml
+```
+
+在项目根目录下的env.yaml文件中定义启用的配置文件，env的属性要和config路径下的配置文件名对应，配置哪个就读取哪个yaml文件
+
+```yaml
+env:
+# 这里env配置为哪个就会对应读取config文件夹下的哪个配置文件
+  dev # 开发环境
+  #test #测试环境
+  #prod #生产环境
+```
+
 ## Python虚拟环境
 
 1. 在vscode中按下`command+shfit+p`选择python解释器
