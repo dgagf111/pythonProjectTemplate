@@ -36,8 +36,8 @@ def get_log_config():
 def get_module_config():
     return env_config['module_config']
 
-# 加载模块
-def load_modules(module_names='', base_path='modules'):
+# 获取需要加载的模块
+def get_load_modules(module_names='', base_path='modules'):
     module_names = get_module_config()['modules']
     base_path = get_module_config()['base_path']
     loaded_modules = {}
