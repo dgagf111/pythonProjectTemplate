@@ -29,6 +29,8 @@ env:
   #prod #生产环境
 ```
 
+添加配置时要在config.py中同步修改获取改配置的方法
+
 ## Python虚拟环境
 
 1. 在vscode中按下`command+shfit+p`选择python解释器

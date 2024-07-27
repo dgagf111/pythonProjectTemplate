@@ -15,6 +15,14 @@ with open(current_working_directory + '/' + 'env' + '.yaml', 'r') as file:
 with open(current_directory + '/' + env_config['env'] + '.yaml', 'r') as file:
     config = yaml.safe_load(file)
 
+# 获取全局环境配置json
+def get_env_config():
+    return env_config
+
+# 获取读取的配置json
+def get_config():
+    return config
+
 # 获取autoMate_token
 def get_autoMate_token():
     return config['autoMate_token']
