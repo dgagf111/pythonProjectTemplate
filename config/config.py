@@ -23,10 +23,6 @@ def get_env_config():
 def get_config():
     return config
 
-# 获取autoMate_token
-def get_autoMate_token():
-    return config['autoMate_token']
-
 # 获取MySQL配置字典
 def get_MySQL_config():
     return config['mysql']

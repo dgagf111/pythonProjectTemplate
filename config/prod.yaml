@@ -1,7 +1,3 @@
-# autoMate机器人token
-autoMate_token: 
-  MTI2MDgwODg5OTA1Nzk0MjU4OQ.GiX8-B.px0HX8yRxBeYw2IYnB0_3aJc3pSGvIezTHnV7E
-
 # mysql连接参数
 mysql:
   username: discordbot
