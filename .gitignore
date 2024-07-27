@@ -32,3 +32,6 @@ Thumbs.db  # Windows
 build/
 dist/
 *.egg-info/
+
+# macOS
+.DS_Store
