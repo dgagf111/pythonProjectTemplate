@@ -34,8 +34,9 @@ env:
 ## Python虚拟环境
 
 1. 在vscode中按下`command+shfit+p`选择python解释器
-2. 创建python虚拟环境
+2. 创建python虚拟环境，选择venv
 3. 再次按下`command+shfit+p`选择虚拟环境中的python解释器
+4. 重新打开一个终端，这时候应该能看到虚拟环境已经启动
 
 > 此模板创建时的python版本为`Python 3.9.6`
 
@@ -43,6 +44,11 @@ env:
 
 1. MySQL的工具类，内置驱动，见`db/mysql_config`
 2. 事务控制见`db/transaction`
+
+## 动态加载模块
+
+在根目录下的env.yaml文件内module_config.modules下定义需要加载的模块，这样当main.py运行的时候，就会自动执行模块内main.py的run方法
+
 
 ## 依赖
 
