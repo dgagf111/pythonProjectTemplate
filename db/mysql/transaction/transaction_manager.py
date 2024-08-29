@@ -51,6 +51,8 @@ with TransactionManager(session) as tm:
     users_to_delete = tm.query(User).filter(User.age > 50).all()
     tm.bulk_delete(users_to_delete)
 """
+from sqlalchemy.orm.exc import NoResultFound
+
 class TransactionManager:
     def __init__(self, session):
         self.session = session
@@ -64,67 +66,45 @@ class TransactionManager:
             self.session.commit()
         else:
             self.session.rollback()
-        self.session.close()
-        return self.affected_rows
+        return False
 
     def add(self, instance):
-        """
-        向会话中添加单个实例
-        :param instance: 要添加的实例
-        :return: 添加的行数 (1)
-        """
+        """向会话中添加单个实例"""
         self.session.add(instance)
+        self.session.flush()  # 刷新会话以获取新插入记录的ID
         self.affected_rows = 1
         return self.affected_rows
 
     def add_all(self, instances):
-        """
-        向会话中添加多个实例
-        :param instances: 要添加的实例列表
-        :return: 添加的行数
-        """
+        """向会话中添加多个实例"""
         self.session.add_all(instances)
+        self.session.flush()  # 刷新会话以获取新插入记录的ID
         self.affected_rows = len(instances)
         return self.affected_rows
 
     def query(self, *entities):
-        """
-        创建查询
-        :param entities: 要查询的实体
-        :return: 查询对象
-        """
+        """创建查询"""
         return self.session.query(*entities)
 
     def delete(self, instance):
-        """
-        从会话中删除单个实例
-        :param instance: 要删除的实例
-        :return: 删除的行数 (1)
-        """
+        """从会话中删除单个实例"""
+        if instance not in self.session:
+            raise ValueError("Instance is not in the session")
         self.session.delete(instance)
         self.affected_rows = 1
         return self.affected_rows
 
     def update(self, instance, values):
-        """
-        更新单个实例
-        :param instance: 要更新的实例
-        :param values: 包含更新值的字典
-        :return: 更新的行数 (1)
-        """
+        """更新单个实例"""
+        if instance not in self.session:
+            raise NoResultFound("Instance not found in the database")
         for key, value in values.items():
             setattr(instance, key, value)
         self.affected_rows = 1
         return self.affected_rows
 
     def bulk_update(self, model, values, condition=None):
-        """
-        批量更新多个实例
-        :param model: 要更新的模型类
-        :param values: 包含更新值的字典
-        :param condition: 更新条件 (可选)
-        :return: 更新的行数
-        """
+        """批量更新多个实例"""
         query = self.session.query(model)
         if condition is not None:
             query = query.filter(condition)
@@ -132,14 +112,13 @@ class TransactionManager:
         return self.affected_rows
 
     def bulk_delete(self, model, condition=None):
-        """
-        批量删除多个实例
-        :param model: 要删除的模型类
-        :param condition: 删除条件 (可选)
-        :return: 删除的行数
-        """
+        """批量删除多个实例"""
         query = self.session.query(model)
         if condition is not None:
             query = query.filter(condition)
         self.affected_rows = query.delete(synchronize_session='fetch')
+        return self.affected_rows
+
+    def get_affected_rows(self):
+        """获取受影响的行数"""
         return self.affected_rows
