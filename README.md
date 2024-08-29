@@ -43,8 +43,8 @@ env:
 
 ## 数据库使用
 
-1. MySQL的工具类，内置驱动，见`db/mysql_config`
-2. 事务控制见`db/transaction`
+1. MySQL的工具类，内置驱动，见`db/mysql.py`
+2. 事务控制见`db/transaction/transaction_manager`
 
 ## 动态加载模块
 
