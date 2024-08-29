@@ -91,6 +91,14 @@ class Config:
                 print(f"Error loading module {module_name}: {e}")
         return loaded_modules
 
+    def get_scheduler_config(self) -> Dict[str, Any]:
+        """获取调度器配置"""
+        return self._env_config.get('scheduler', {}) 
+
+    def get_tasks_config(self) -> Dict[str, Any]:
+        """获取任务配置"""
+        return self._config.get('tasks', {})
+
 # 全局配置实例
 config = Config()
 

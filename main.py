@@ -1,6 +1,9 @@
 import config.config as config
 import importlib
 from log.logHelper import get_logger
+from scheduler.scheduler_center import scheduler_center
+import signal
+import sys
 
 """
 全局日志实例使用说明：
@@ -30,7 +33,7 @@ from log.logHelper import get_logger
 
 6. 注意事项：
    - 避免在日志消息中包含敏感信息（如密码、个人身份信息等）
-   - 对于大量重复的日志，考虑使用更低的日志级别或减少日志频率
+   - 对于大量重复的日志，考虑使用更低的日志级别或减少日志率
    - 在处理异常时，推荐使用 logger.exception()，它会自动包含堆栈跟踪信息
 """
 
@@ -64,11 +67,36 @@ def load_and_run_modules():
 
     logger.info("所有模块加载和运行完成")
 
+def graceful_shutdown():
+    logger.info("开始优雅关闭...")
+    scheduler_center.shutdown()
+    # 这里可以添加其他需要清理的资源
+    logger.info("应用程序已关闭")
+    sys.exit(0)
+
+def signal_handler(signum, frame):
+    logger.info(f"接收到信号: {signal.Signals(signum).name}")
+    graceful_shutdown()
+
 # 主程序入口
 if __name__ == "__main__":
-    logger.info("主程序开始运行")
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    logger.info("应用程序启动")
+    
+    # 启动调度中心
+    scheduler_center.start()
+    logger.info("调度中心已启动")
+
+    # 加载并运行模块
+    load_and_run_modules()
+
     try:
-        load_and_run_modules()
-    except Exception as e:
-        logger.critical(f"主程序运行时发生严重错误: {e}", exc_info=True)
-    logger.info("主程序运行结束")
+        # 使用 signal.pause() 等待信号
+        logger.info("主程序进入等待状态，按 Ctrl+C 或发送 SIGTERM 信号来停止服务")
+        signal.pause()
+    except KeyboardInterrupt:
+        logger.info("接收到键盘中断")
+    finally:
+        graceful_shutdown()
