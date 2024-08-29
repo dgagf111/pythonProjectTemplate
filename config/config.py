@@ -3,6 +3,10 @@ import os
 from typing import Dict, Any
 from dotenv import load_dotenv
 
+# 使用示例
+# from config.config import config
+# mysql_config = config.get_mysql_config()
+
 class Config:
     # 单例模式实现
     _instance = None
