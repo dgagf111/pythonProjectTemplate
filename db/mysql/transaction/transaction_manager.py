@@ -52,21 +52,28 @@ with TransactionManager(session) as tm:
     tm.bulk_delete(users_to_delete)
 """
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql import text
+from sqlalchemy import text
 
 class TransactionManager:
     def __init__(self, session):
         self.session = session
         self.affected_rows = 0
+        self._transaction = None
 
     def __enter__(self):
+        if not self.session.in_transaction():
+            self._transaction = self.session.begin()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        if exc_type is None:
-            self.session.commit()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            if self._transaction:
+                self._transaction.rollback()
         else:
-            self.session.rollback()
-        return False
+            if self._transaction:
+                self._transaction.commit()
+        self._transaction = None
 
     def add(self, instance):
         """向会话中添加单个实例"""
@@ -87,7 +94,7 @@ class TransactionManager:
         return self.session.query(*entities)
 
     def delete(self, instance):
-        """从会话中删除单个实例"""
+        """从会话中删除个实例"""
         if instance not in self.session:
             raise ValueError("Instance is not in the session")
         self.session.delete(instance)

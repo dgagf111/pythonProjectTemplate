@@ -73,7 +73,8 @@ class LogHelper:
             self.max_bytes = max_bytes
             self.backup_count = backup_count
             self.logger = logging.getLogger(self.project_name)
-            self.logger.setLevel(self.log_level)
+            # 确保日志级别设置为 DEBUG
+            self.logger.setLevel(logging.DEBUG)
             self.setup_handlers()
             self.initialized = True
 
@@ -86,6 +87,7 @@ class LogHelper:
         self.project_name = project_name or log_config.get('project_name', 'default_project')
         self.base_log_directory = base_log_directory or log_config.get('base_log_directory', '../log')
         log_level_str = log_level or log_config.get('log_level', 'DEBUG').upper()
+        # 确保默认日志级别为 DEBUG
         self.log_level = getattr(logging, log_level_str, logging.DEBUG)
 
     def setup_handlers(self):
@@ -94,7 +96,7 @@ class LogHelper:
         """
         # 设置控制台处理器
         stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(self.log_level)
+        stream_handler.setLevel(logging.DEBUG)  # 确保控制台处理器也设置为 DEBUG 级别
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         stream_handler.setFormatter(formatter)
         self.logger.addHandler(stream_handler)
@@ -120,7 +122,7 @@ class LogHelper:
         file_handler = RotatingFileHandler(
             log_file_path, maxBytes=self.max_bytes, backupCount=self.backup_count
         )
-        file_handler.setLevel(self.log_level)
+        file_handler.setLevel(logging.DEBUG)  # 确保文件处理器也设置为 DEBUG 级别
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
         
         self.logger.addHandler(file_handler)
@@ -137,3 +139,60 @@ def get_logger():
     :return: LogHelper实例
     """
     return LogHelper()
+
+if __name__ == '__main__':
+    import shutil
+
+    # 测试设置
+    test_project_name = "TestProject"
+    test_log_dir = "./test_logs"
+    
+    # 创建测试用的 logger，并明确设置日志级别为 DEBUG
+    logger = LogHelper(project_name=test_project_name, base_log_directory=test_log_dir, log_level="DEBUG")
+
+    # 测试日志创建
+    logger.info("测试日志信息")
+    current_date = datetime.now()
+    year, month, day = current_date.strftime('%Y'), current_date.strftime('%Y-%m'), current_date.strftime('%Y-%m-%d')
+    expected_log_path = os.path.join(test_log_dir, test_project_name, year, month, f"{day}.log")
+    
+    if os.path.exists(expected_log_path):
+        print("测试通过：日志文件已成功创建")
+    else:
+        print("测试失败：日志文件未被创建")
+
+    # 测试不同级别的日志
+    test_messages = {
+        "debug": "这是一条调试日志",
+        "info": "这是一条信息日志",
+        "warning": "这是一条警告日志",
+        "error": "这是一条错误日志",
+        "critical": "这是一条严重错误日志"
+    }
+
+    for level, message in test_messages.items():
+        getattr(logger, level)(message)
+
+    # 检查日志文件内容
+    with open(expected_log_path, 'r', encoding='utf-8') as log_file:
+        content = log_file.read()
+        for message in test_messages.values():
+            if message in content:
+                print(f"测试通过：日志消息 '{message}' 已成功记录")
+            else:
+                print(f"测试失败：日志消息 '{message}' 未在日志文件中找到")
+
+    # 测试单例模式
+    logger1 = get_logger()
+    logger2 = get_logger()
+    if logger1 is logger2:
+        print("测试通过：get_logger() 返回了相同的实例")
+    else:
+        print("测试失败：get_logger() 没有返回相同的实例")
+
+    # 清理测试生成的日志文件和目录
+    if os.path.exists(test_log_dir):
+        shutil.rmtree(test_log_dir)
+        print("测试日志目录已清理")
+
+    print("所有测试完成")

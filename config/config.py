@@ -99,40 +99,20 @@ def run_tests():
     print("运行配置测试...")
     
     # 测试单例模式
-    config1 = Config()
-    config2 = Config()
+    config1, config2 = Config(), Config()
     assert config1 is config2, "单例模式测试失败"
-    print("单例模式测试通过")
 
-    # 测试环境配置加载
-    env_config = config.get_env_config()
-    assert env_config is not None, "环境配置加载失败"
-    print("环境配置加载测试通过")
-
-    # 测试MySQL配置
+    # 测试各种配置加载
+    assert config.get_env_config() is not None, "环境配置加载失败"
+    
     mysql_config = config.get_mysql_config()
-    assert 'username' in mysql_config, "MySQL配置缺少username"
-    assert 'password' in mysql_config, "MySQL配置缺少password"
-    assert 'host' in mysql_config, "MySQL配置缺少host"
-    assert 'port' in mysql_config, "MySQL配置缺少port"
-    assert 'database' in mysql_config, "MySQL配置缺少database"
-    print("MySQL配置测试通过")
-
-    # 测试日志配置
-    log_config = config.get_log_config()
-    assert log_config is not None, "日志配置加载失败"
-    print("日志配置测试通过")
-
-    # 测试模块配置
-    module_config = config.get_module_config()
-    assert module_config is not None, "模块配置加载失败"
-    print("模块配置测试通过")
+    for key in ['username', 'password', 'host', 'port', 'database']:
+        assert key in mysql_config, f"MySQL配置缺少{key}"
+    
+    assert config.get_log_config() is not None, "日志配置加载失败"
+    assert config.get_module_config() is not None, "模块配置加载失败"
 
     print("所有测试通过！")
 
 if __name__ == "__main__":
-    # 运行测试
     run_tests()
-
-    # 打印读取的配置
-    # print(load_modules())
