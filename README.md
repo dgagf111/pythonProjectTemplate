@@ -37,6 +37,7 @@ env:
 2. 创建python虚拟环境，选择venv
 3. 再次按下`command+shfit+p`选择虚拟环境中的python解释器
 4. 重新打开一个终端，这时候应该能看到虚拟环境已经启动
+5. 如果还是没有启动，在终端中输入`source .venv/bin/activate`
 
 > 此模板创建时的python版本为`Python 3.9.6`
 
@@ -66,3 +67,8 @@ env:
     ```
 
     安装完成后，在Python代码中通过 `import sqlalchemy` 来使用sqlalchemy功能。
+3. python-dotenv
+
+    ```bash
+    pip install pyyaml python-dotenv
+    ```
