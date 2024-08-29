@@ -50,25 +50,35 @@ env:
 
 在根目录下的env.yaml文件内module_config.modules下定义需要加载的模块，这样当main.py运行的时候，就会自动执行模块内main.py的run方法
 
-
 ## 依赖
 
-1. yaml
+```bash
+pip install pyyaml
+pip install sqlalchemy
+pip install pyyaml python-dotenv
+pip install mysql-connector-python
+pip install pytest
+pip install pymysql
+```
 
-    ```bash
-    pip install pyyaml
-    ```
+## 运行测试
 
-    安装完成后，在Python代码中通过 `import yaml` 来使用YAML功能。
-2. sqlalchemy
+本项目支持运行不同类型的测试。使用以下命令来运行测试：
 
-    ```bash
-    pip install sqlalchemy
-    ```
+* 运行所有测试：
 
-    安装完成后，在Python代码中通过 `import sqlalchemy` 来使用sqlalchemy功能。
-3. python-dotenv
+  ```
+  python tests/run_tests.py all
+  ```
+* 只运行框架测试：
 
-    ```bash
-    pip install pyyaml python-dotenv
-    ```
+  ```
+  python tests/run_tests.py framework
+  ```
+* 只运行业务测试：
+
+  ```
+  python tests/run_tests.py business
+  ```
+
+请确保在运行测试之前已经设置好了正确的环境和依赖。
