@@ -103,6 +103,10 @@ class Config:
         """获取缓存配置"""
         return self._config.get('cache', {})
 
+    def get_monitoring_config(self):
+        """获取监控配置"""
+        return self._config.get('monitoring', {})
+
 
 # 全局配置实例
 config = Config()

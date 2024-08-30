@@ -53,3 +53,9 @@ cache:
     host: localhost
     port: 6379
     db: 0
+
+# 监控配置
+monitoring:
+  prometheus_port: 9966
+  cpu_threshold: 80
+  memory_threshold: 80

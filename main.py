@@ -1,4 +1,4 @@
-import config.config as config
+from config.config import config
 import importlib
 from log.logHelper import get_logger
 from scheduler.scheduler_center import scheduler_center
@@ -23,7 +23,7 @@ import sys
    logger.debug(f"当前配置: {config}")
    logger.warning("配置文件未找到，使用默认配置")
    logger.error("数据库连接失败")
-   logger.critical("严重错误：应用程序即将关闭")
+   logger.critical("严重错误：应用���序即将关闭")
 
 4. 日志格式：
    默认格式为：'时间戳 - 日志名称 - 日志级别 - 日志消息'
@@ -97,6 +97,6 @@ if __name__ == "__main__":
         logger.info("主程序进入等待状态，按 Ctrl+C 或发送 SIGTERM 信号来停止服务")
         signal.pause()
     except KeyboardInterrupt:
-        logger.info("接收到键盘中断")
+        logger.info("接收到��盘中断")
     finally:
         graceful_shutdown()
