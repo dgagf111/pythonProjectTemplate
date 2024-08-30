@@ -63,6 +63,9 @@ pip install pytest
 pip install pymysql
 pip install apscheduler
 pip install cachetools redis
+pip install prometheus_client psutil
+pip install requests
+pip install alembic
 ```
 
 ## 运行测试
