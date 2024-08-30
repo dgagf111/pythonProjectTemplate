@@ -5,3 +5,51 @@ mysql:
   host: 116.198.240.197
   port: 3306
   database: discordbot
+
+# 定时器任务配置
+tasks:
+  # 配置说明：
+  # trigger: 定义任务的触发方式
+  #   - interval: 间隔触发，可以使用 weeks, days, hours, minutes, seconds 等参数
+  #   - cron: 在特定时间触发，使用 cron 表达式格式
+  #   - date: 在指定日期时间触发（单次）
+  # args: 触发器的具体参数，根据 trigger 类型而不同
+  # max_attempts: 任务失败后的最大重试次数
+  #   - 如果任务执行失败，调度器会尝试重新执行，直到达到这个次数
+  # retry_delay: 重试之间的等待时间（秒）
+  #   - 每次重试之前，调度器会等待这里指定的秒数
+
+  # 任务1配置
+  task1:
+    # 触发器类型：每隔一定时间执行一次
+    trigger: interval
+    # 触发器参数：每10秒执行一次
+    args:
+      seconds: 1
+    # 重试机制-最大重试次数：如果任务失败，最多重试3次
+    max_attempts: 3
+    # 重试机制-重试延迟：每次重试之间等待2秒
+    retry_delay: 2
+  # 任务2配置
+  task2:
+    # 触发器类型：在特定时间执行
+    trigger: cron
+    # 触发器参数：每天12:00执行
+    args:
+      hour: 12
+      minute: 0
+    # 重试机制-最大重试次数：如果任务失败，最多重试5次
+    max_attempts: 5
+    # 重试机制-重试延迟：每次重试之间等待5秒
+    retry_delay: 5
+# 如果任务在所有重试后仍然失败，它将被标记为失败，并等待下一次调度
+
+# 缓存配置
+cache:
+  type: memory  # 可选: memory, redis
+  ttl: 3600  # 默认缓存时间（秒）
+  max_size: 1000  # 最大缓存项数（仅用于内存缓存）
+  redis:
+    host: localhost
+    port: 6379
+    db: 0

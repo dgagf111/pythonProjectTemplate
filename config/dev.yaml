@@ -43,3 +43,13 @@ tasks:
     # 重试机制-重试延迟：每次重试之间等待5秒
     retry_delay: 5
 # 如果任务在所有重试后仍然失败，它将被标记为失败，并等待下一次调度
+
+# 缓存配置
+cache:
+  type: memory  # 可选: memory, redis
+  ttl: 3600  # 默认缓存时间（秒）
+  max_size: 1000  # 最大缓存项数（仅用于内存缓存）
+  redis:
+    host: localhost
+    port: 6379
+    db: 0
