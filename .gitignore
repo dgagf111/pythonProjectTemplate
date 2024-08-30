@@ -36,3 +36,7 @@ dist/
 
 # macOS
 .DS_Store
+
+# 忽略 Alembic 的版本文件夹，但保留迁移脚本
+db/alembic/versions/*
+!db/alembic/versions/*.py
