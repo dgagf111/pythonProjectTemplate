@@ -4,6 +4,7 @@ from log.logHelper import get_logger
 from scheduler.scheduler_center import scheduler_center
 import signal
 import sys
+from redis_msg_center.main import redis_msg_center
 
 """
 全局日志实例使用说明：
@@ -70,6 +71,7 @@ def load_and_run_modules():
 def graceful_shutdown():
     logger.info("开始优雅关闭...")
     scheduler_center.shutdown()
+    redis_msg_center.shutdown()
     # 这里可以添加其他需要清理的资源
     logger.info("应用程序已关闭")
     sys.exit(0)
@@ -89,6 +91,10 @@ if __name__ == "__main__":
     scheduler_center.start()
     logger.info("调度中心已启动")
 
+    # 启动Redis消息中心
+    redis_msg_center.start()
+    logger.info("Redis消息中心已启动")
+
     # 加载并运行模块
     load_and_run_modules()
 
@@ -97,6 +103,6 @@ if __name__ == "__main__":
         logger.info("主程序进入等待状态，按 Ctrl+C 或发送 SIGTERM 信号来停止服务")
         signal.pause()
     except KeyboardInterrupt:
-        logger.info("接收到��盘中断")
+        logger.info("接收到键盘中断")
     finally:
         graceful_shutdown()

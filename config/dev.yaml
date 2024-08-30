@@ -46,16 +46,16 @@ tasks:
 
 # 缓存配置
 cache:
-  type: redis  # 可选: memory, redis
-  ttl: 3600  # 默认缓存时间（秒）
-  max_size: 1000  # 最大缓存项数（仅用于内存缓存）
+  type: redis  # 缓存类型，可选值: memory（内存缓存）或 redis（Redis缓存）
+  ttl: 3600  # 默认缓存时间（秒），设置缓存项的生存时间
+  max_size: 1000  # 最大缓存项数，仅适用于内存缓存，用于限制内存使用
   redis:
-    host: localhost
-    port: 6379
-    db: 0
+    host: localhost  # Redis服务器主机地址
+    port: 6379  # Redis服务器端口
+    db: 0  # Redis数据库索引，用于选择特定的数据库
 
 # 监控配置
 monitoring:
-  prometheus_port: 9966
-  cpu_threshold: 80
-  memory_threshold: 80
+  prometheus_port: 9966  # Prometheus监控服务的端口号，用于暴露监控指标
+  cpu_threshold: 80  # CPU使用率阈值（百分比），超过此值将触发警告
+  memory_threshold: 80  # 内存使用率阈值（百分比），超过此值将触发警告
