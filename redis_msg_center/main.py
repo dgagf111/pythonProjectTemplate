@@ -56,7 +56,7 @@ class RedisMsgCenter:
                     except Exception as e:
                         error_count += 1
                         if error_count % 10 == 0:  # 每10次错误输出一次日志
-                            logger.error(f"处理消息时出错 (已发生 {error_count} ��): {str(e)}")
+                            logger.error(f"处理消息时出错 (已发生 {error_count} 次): {str(e)}")
 
 redis_msg_center = RedisMsgCenter()
 
