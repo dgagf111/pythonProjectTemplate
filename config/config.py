@@ -99,14 +99,13 @@ class Config:
         """获取任务配置"""
         return self._config.get('tasks', {})
 
-    def get_cache_config(self):
+    def get_cache_config(self) -> Dict[str, Any]:
         """获取缓存配置"""
         return self._config.get('cache', {})
 
 
 # 全局配置实例
 config = Config()
-
 # 测试代码
 def run_tests():
     print("运行配置测试...")

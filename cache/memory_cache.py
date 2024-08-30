@@ -11,20 +11,18 @@ class MemoryCacheManager(BaseCacheManager):
         item = self.cache.get(key)
         if item is None:
             return None
-        if isinstance(item, tuple):
-            value, expiration = item
-            if time.time() > expiration:
-                self.delete(key)
-                return None
+        value, expiration, *_ = item
+        if expiration is None or time.time() < expiration:
             return value
-        return item
+        else:
+            del self.cache[key]
+            return None
 
     def set(self, key, value, ttl=None):
-        if ttl is not None:
-            expiration = time.time() + ttl
-            self.cache[key] = (value, expiration)
-        else:
-            self.cache[key] = value
+        if ttl is None:
+            ttl = self.default_ttl
+        expiration = time.time() + ttl if ttl is not None else None
+        self.cache[key] = (value, expiration)
 
     def delete(self, key):
         self.cache.pop(key, None)

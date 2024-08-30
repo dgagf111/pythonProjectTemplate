@@ -46,7 +46,7 @@ tasks:
 
 # 缓存配置
 cache:
-  type: memory  # 可选: memory, redis
+  type: redis  # 可选: memory, redis
   ttl: 3600  # 默认缓存时间（秒）
   max_size: 1000  # 最大缓存项数（仅用于内存缓存）
   redis:
