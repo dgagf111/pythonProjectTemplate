@@ -107,6 +107,9 @@ class Config:
         """获取监控配置"""
         return self._config.get('monitoring', {})
 
+    def get_api_config(self) -> Dict[str, Any]:
+        """获取API服务器配置"""
+        return self._config.get('api', {})
 
 # 全局配置实例
 config = Config()

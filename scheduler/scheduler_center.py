@@ -134,9 +134,13 @@ class SchedulerCenter:
         关闭调度中心。
         停止调度器并释放资源。
         """
-        if self.scheduler:
-            self.scheduler.shutdown()
-            logger.info("调度器已关闭")
+        logger.info("正在关闭调度器...")
+        if self.scheduler and self.scheduler.running:
+            try:
+                self.scheduler.shutdown()
+            except Exception as e:
+                logger.error(f"关闭调度器时发生错误: {e}")
+        logger.info("调度器已关闭")
 
     def print_jobs(self):
         """

@@ -3,6 +3,7 @@ from .prometheus_exporter import setup_metrics
 from .alerting import setup_alerting
 from log.logHelper import get_logger
 import threading
+import time
 
 logger = get_logger()
 
@@ -10,6 +11,7 @@ class MonitoringCenter:
     def __init__(self):
         self.running = False
         self.thread = None
+        self.should_exit = threading.Event()
 
     def start(self, test_mode=False):
         if self.running:
@@ -26,17 +28,17 @@ class MonitoringCenter:
         logger.info("监控模块已启动，Prometheus 指标可在 http://localhost:9966 访问")
 
     def _run_alerting(self):
-        setup_alerting()
+        while not self.should_exit.is_set():
+            setup_alerting()
+            time.sleep(60)  # 每分钟检查一次
 
     def shutdown(self):
-        if not self.running:
-            logger.warning("监控中心未在运行")
-            return
-
         logger.info("正在关闭监控模块...")
+        self.should_exit.set()
         self.running = False
         if self.thread:
-            self.thread.join()
+            self.thread.join(timeout=1)
+        self.thread = None
         logger.info("监控模块已关闭")
 
 monitoring_center = MonitoringCenter()

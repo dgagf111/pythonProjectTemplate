@@ -1,11 +1,14 @@
+from api.fastapi_center import fastapi_center
 from config.config import config
 import importlib
 from log.logHelper import get_logger
 from scheduler.scheduler_center import scheduler_center
 import signal
-import sys
 from redis_msg_center.main import redis_msg_center
 from monitoring.main import monitoring_center
+import os
+import asyncio
+import threading
 
 """
 全局日志实例使用说明：
@@ -35,7 +38,7 @@ from monitoring.main import monitoring_center
 
 6. 注意事项：
    - 避免在日志消息中包含敏感信息（如密码、个人身份信息等）
-   - 对于大量重复的日志，考虑使用更低的日志级别或减少日志率
+   - 对于大量重复的日志，考虑使用更低的日志级别或减少日志
    - 在处理异常时，推荐使用 logger.exception()，它会自动包含堆栈跟踪信息
 """
 
@@ -69,46 +72,51 @@ def load_and_run_modules():
 
     logger.info("所有模块加载和运行完成")
 
-def graceful_shutdown():
+async def graceful_shutdown():
     logger.info("开始优雅关闭...")
     scheduler_center.shutdown()
     redis_msg_center.shutdown()
     monitoring_center.shutdown()
-    # 这里可以添加其他需要清理的资源
+    await fastapi_center.shutdown()
     logger.info("应用程序已关闭")
-    sys.exit(0)
+    os._exit(0)  # 使用 os._exit() 强制退出
 
 def signal_handler(signum, frame):
     logger.info(f"接收到信号: {signal.Signals(signum).name}")
-    graceful_shutdown()
+    threading.Thread(target=lambda: asyncio.run(graceful_shutdown())).start()
 
-# 主程序入口
-if __name__ == "__main__":
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
-    logger.info("应用程序启动")
-    
-    # 启动调度中心
-    scheduler_center.start()
-    logger.info("调度中心已启动")
-
-    # 启动Redis消息中心
-    redis_msg_center.start()
-    logger.info("Redis消息中心已启动")
-
-    # 启动监控中心
-    monitoring_center.start()
-    logger.info("监控中心已启动")
-
-    # 加载并运行模块
-    load_and_run_modules()
-
+def main():
     try:
+        logger.info("应用程序启动")
+        
+        # 启动调度中心
+        scheduler_center.start()
+        logger.info("调度中心已启动")
+
+        # 启动Redis消息中心
+        redis_msg_center.start()
+        logger.info("Redis消息中心已启动")
+
+        # 启动监控中心
+        monitoring_center.start()
+        logger.info("监控中心已启动")
+
+        # 加载并运行模块
+        load_and_run_modules()
+
+        # 启动FastAPI
+        fastapi_center.start()
+        logger.info("FastAPI已启动")
+
         # 使用 signal.pause() 等待信号
         logger.info("主程序进入等待状态，按 Ctrl+C 或发送 SIGTERM 信号来停止服务")
         signal.pause()
-    except KeyboardInterrupt:
-        logger.info("接收到键盘中断")
+    except Exception as e:
+        logger.error(f"启动过程中发生错误: {e}")
     finally:
-        graceful_shutdown()
+        asyncio.run(graceful_shutdown())
+
+if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    main()

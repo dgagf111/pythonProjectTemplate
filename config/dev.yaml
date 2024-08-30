@@ -28,7 +28,7 @@ tasks:
       seconds: 1
     # 重试机制-最大重试次数：如果任务失败，最多重试3次
     max_attempts: 3
-    # 重试机制-重试延迟：每次重试之间等待2秒
+    # 重试机制-重试延迟：每次重试之间等2秒
     retry_delay: 2
   # 任务2配置
   task2:
@@ -59,3 +59,38 @@ monitoring:
   prometheus_port: 9966  # Prometheus监控服务的端口号，用于暴露监控指标
   cpu_threshold: 80  # CPU使用率阈值（百分比），超过此值将触发警告
   memory_threshold: 80  # 内存使用率阈值（百分比），超过此值将触发警告
+
+# API服务器配置
+api:
+  # 服务器监听的IP地址
+  # "0.0.0.0" 表示监听所有可用的网络接口
+  host: "0.0.0.0"
+  
+  # 服务器监听的端口号
+  # 8000 是常用的开发端口,生产环境可能需要使用其他端口
+  port: 8000
+  
+  # 事件循环类型
+  # "asyncio" 是Python的标准异步IO库,适用于大多数情况
+  # 其他选项可能包括 "uvloop" (更快的事件循环实现)
+  loop: "asyncio"
+  
+  # 是否在启动时打开API文档
+  # true 表示启动服务器时自动打开Swagger UI文档
+  open_api_on_startup: false
+  
+  # API文档的URL路径
+  # "/docs" 是FastAPI的默认Swagger UI路径
+  docs_url: "/docs"
+  
+  # 允许跨域请求的源
+  # "*" 表示允许所有源,生产环境应该指定具体的域名
+  cors_origins: ["*"]
+  
+  # 最大并发请求数
+  # 控制服务器同时处理的最大请求数,有助于防止过载
+  max_concurrency: 100
+  
+  # 请求超时时间(秒)
+  # 如果请求处理时间超过此值,将返回超时错误
+  request_timeout: 30
