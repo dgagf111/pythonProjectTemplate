@@ -23,7 +23,7 @@ import sys
    logger.debug(f"当前配置: {config}")
    logger.warning("配置文件未找到，使用默认配置")
    logger.error("数据库连接失败")
-   logger.critical("严重错误：应用���序即将关闭")
+   logger.critical("严重错误：应用程序即将关闭")
 
 4. 日志格式：
    默认格式为：'时间戳 - 日志名称 - 日志级别 - 日志消息'
