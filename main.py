@@ -5,6 +5,7 @@ from scheduler.scheduler_center import scheduler_center
 import signal
 import sys
 from redis_msg_center.main import redis_msg_center
+from monitoring.main import monitoring_center
 
 """
 全局日志实例使用说明：
@@ -72,6 +73,7 @@ def graceful_shutdown():
     logger.info("开始优雅关闭...")
     scheduler_center.shutdown()
     redis_msg_center.shutdown()
+    monitoring_center.shutdown()
     # 这里可以添加其他需要清理的资源
     logger.info("应用程序已关闭")
     sys.exit(0)
@@ -94,6 +96,10 @@ if __name__ == "__main__":
     # 启动Redis消息中心
     redis_msg_center.start()
     logger.info("Redis消息中心已启动")
+
+    # 启动监控中心
+    monitoring_center.start()
+    logger.info("监控中心已启动")
 
     # 加载并运行模块
     load_and_run_modules()

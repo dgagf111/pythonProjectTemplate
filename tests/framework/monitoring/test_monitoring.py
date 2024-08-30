@@ -1,9 +1,9 @@
 import pytest
 import requests
 import time
-from modules.monitoring.main import run
-from modules.monitoring.prometheus_exporter import REQUEST_COUNT, RESPONSE_TIME, CPU_USAGE, MEMORY_USAGE
-from modules.monitoring.alerting import check_cpu_usage, check_memory_usage
+from monitoring.main import monitoring_center
+from monitoring.prometheus_exporter import REQUEST_COUNT, RESPONSE_TIME, CPU_USAGE, MEMORY_USAGE
+from monitoring.alerting import check_cpu_usage, check_memory_usage
 from unittest.mock import patch
 from log.logHelper import get_logger
 
@@ -12,7 +12,7 @@ logger = get_logger()
 @pytest.fixture(scope="module")
 def monitoring_setup():
     # 启动监控模块，使用测试模式
-    run(test_mode=True)
+    monitoring_center.start(test_mode=True)
     # 等待服务器启动
     time.sleep(2)
     yield
@@ -22,8 +22,6 @@ def test_prometheus_server(monitoring_setup):
     # 测试 Prometheus 服务器是否正常运行
     response = requests.get("http://localhost:9966")
     assert response.status_code == 200
-
-from modules.monitoring.prometheus_exporter import REQUEST_COUNT, RESPONSE_TIME, CPU_USAGE, MEMORY_USAGE
 
 def test_metrics_creation():
     # 测试指标是否被正确创建
@@ -56,7 +54,7 @@ def test_system_metrics_update(mock_memory, mock_cpu):
     assert CPU_USAGE._value.get() == 50.0
     assert MEMORY_USAGE._value.get() == 60.0
 
-@patch('modules.monitoring.alerting.logger.warning')
+@patch('monitoring.alerting.logger.warning')
 def test_alerting(mock_logger):
     # 测试 CPU 使用率报警
     assert not check_cpu_usage(threshold=90)  # 不触发报警

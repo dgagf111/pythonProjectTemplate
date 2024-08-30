@@ -16,14 +16,9 @@ def check_memory_usage(threshold=80):
         logger.warning(f"内存使用率过高: {memory_usage}%")
         # 添加发送警报的逻辑
 
-def setup_alerting(test_mode=False):
+def setup_alerting():
     logger.info("设置报警系统...")
-    if test_mode:
-        # 在测试模式下只运行一次检查
+    while True:
         check_cpu_usage()
         check_memory_usage()
-    else:
-        while True:
-            check_cpu_usage()
-            check_memory_usage()
-            time.sleep(60)  # 每分钟检查一次
+        time.sleep(60)  # 每分钟检查一次
