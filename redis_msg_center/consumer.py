@@ -1,5 +1,4 @@
 import json
-import time
 import threading
 from log.logHelper import get_logger
 from .message import Message
@@ -53,8 +52,10 @@ class MessageConsumer:
         for message in messages:
             self.redis_msg_center.handle_message(message)
 
+    # 使用现有的 consume_lock 以确保在 handle_message 和 consume_message 方法中使用相同的锁，
+    # 从而实现适当的同步，避免竞争条件。
     def handle_message(self, message):
-        with threading.Lock():
+        with self.consume_lock:
             self.redis_msg_center.handle_message(message)
 
     def stop_consuming(self):

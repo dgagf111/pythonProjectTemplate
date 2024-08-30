@@ -16,11 +16,12 @@ def test_message_to_json():
     assert "expiration" in json_str
 
 def test_message_from_json():
-    json_str = '{"topic": "test_topic", "content": "test_content", "expiration": "2023-08-30T10:00:00+00:00"}'
+    json_str = '{"id": "test-id", "topic": "test_topic", "content": "test_content", "expiration": "2023-08-30T10:00:00+00:00"}'
     message = Message.from_json(json_str)
+    assert message.id == "test-id"
     assert message.topic == "test_topic"
     assert message.content == "test_content"
-    assert message.expiration == "2023-08-30T10:00:00+00:00"
+    assert message.expiration == datetime(2023, 8, 30, 10, 0, tzinfo=UTC)
 
 def test_message_is_expired():
     expired_message = Message("test_topic", "test_content", ttl=-1)

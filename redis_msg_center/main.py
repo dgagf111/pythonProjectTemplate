@@ -14,6 +14,7 @@ class RedisMsgCenter:
         self.consumer = MessageConsumer(self.config, self)
         self.subscribers = {}
         self.is_running = False
+        self.consumer_thread = None
 
     def subscribe(self, topic, handler):
         if topic not in self.subscribers:
@@ -33,7 +34,7 @@ class RedisMsgCenter:
         if self.is_running:
             logger.info("Redis消息中心正在关闭...")
             self.is_running = False
-            if self.consumer_thread:
+            if hasattr(self, 'consumer_thread') and self.consumer_thread:
                 self.consumer.stop_consuming()
                 self.consumer_thread.join()
             logger.info("Redis消息中心已关闭")
@@ -55,7 +56,7 @@ class RedisMsgCenter:
                     except Exception as e:
                         error_count += 1
                         if error_count % 10 == 0:  # 每10次错误输出一次日志
-                            logger.error(f"处理消息时出错 (已发生 {error_count} 次): {str(e)}")
+                            logger.error(f"处理消息时出错 (已发生 {error_count} ��): {str(e)}")
 
 redis_msg_center = RedisMsgCenter()
 

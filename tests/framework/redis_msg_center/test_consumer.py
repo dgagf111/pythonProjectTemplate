@@ -18,11 +18,12 @@ def mock_config(mock_redis_client):
 def test_consume_message(mock_config):
     mock_redis_msg_center = Mock()
     consumer = MessageConsumer(mock_config, mock_redis_msg_center)
-    mock_config.redis_client.blpop.return_value = ('test_queue', b'{"topic": "test", "content": "Test message", "expiration": null}')
+    mock_config.redis_client.blpop.return_value = ('test_queue', b'{"id": "test-id", "topic": "test", "content": "Test message", "expiration": null}')
     
     message = consumer.consume_message()
     
     assert message is not None
+    assert message.id == "test-id"
     assert message.topic == "test"
     assert message.content == "Test message"
     mock_config.redis_client.blpop.assert_called_once_with('test_queue', timeout=1)

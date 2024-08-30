@@ -46,16 +46,6 @@ tasks:
 
 # 缓存配置
 cache:
-  type: memory  # 可选: memory, redis
-  ttl: 3600  # 默认缓存时间（秒）
-  max_size: 1000  # 最大缓存项数（仅用于内存缓存）
-  redis:
-    host: localhost
-    port: 6379
-    db: 0
-
-# 缓存配置
-cache:
   type: redis  # 缓存类型，可选值: memory（内存缓存）或 redis（Redis缓存）
   ttl: 3600  # 默认缓存时间（秒），设置缓存项的生存时间
   max_size: 1000  # 最大缓存项数，仅适用于内存缓存，用于限制内存使用
