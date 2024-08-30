@@ -15,7 +15,7 @@ def run_framework_tests():
     """运行框架测试"""
     logger.info("开始运行框架测试...")
     framework_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'framework')
-    pytest.main(['-v', '--tb=short', '-s', framework_dir, '-k', 'test_tasks or test_config or test_log'])
+    pytest.main(['-v', '--tb=short', '-s', framework_dir])
     logger.info("框架测试运行完成")
 
 def run_business_tests():

@@ -1,56 +1,58 @@
 """
-Function: 事务管理器
-Description: 数据库事务管理
-    
-with TransactionManager(session) 确保在代码块执行完成后，
-无论是否发生异常，都会提交或回滚事务，并关闭会话。
-    
-用法：
-# 插入数据
+功能: 事务管理器
+描述: 数据库事务管理和SQL操作封装
+
+TransactionManager 类提供了以下主要功能:
+1. 事务控制: 使用上下文管理器确保事务的正确提交或回滚
+2. CRUD操作: 封装了增删改查等基本数据库操作
+3. 批量操作: 支持批量添加、更新和删除
+4. 参数化查询: 提供安全的参数化查询方法，防止SQL注入
+
+使用示例:
+
+1. 基本CRUD操作:
 session = Session()
 with TransactionManager(session) as tm:
-    user1 = User(name='Alice', age=30)
-    user2 = User(name='Bob', age=25)
-    tm.add(user1)
-    tm.add(user2)
+    # 插入数据
+    user = User(name='Alice', age=30)
+    tm.add(user)
     
-# 查询数据
-session = Session()
-with TransactionManager(session) as tm:
+    # 查询数据
     users = tm.query(User).all()
-    for user in users:
-        print(f"ID: {user.id}, Name: {user.name}, Age: {user.age}")
     
-# 更新数据
-session = Session()
-with TransactionManager(session) as tm:
+    # 更新数据
     user = tm.query(User).filter_by(name='Alice').first()
-    if user:
-        user.age = 31
-        tm.add(user)
+    tm.update(user, {'age': 31})
     
     # 删除数据
-session = Session()
-with TransactionManager(session) as tm:
-    user = tm.query(User).filter_by(name='Bob').first()
-    if user:
-        tm.delete(user)
-    
-    # 批量操作
-session = Session()
+    tm.delete(user)
+
+2. 批量操作:
 with TransactionManager(session) as tm:
     # 批量添加
     users = [User(name='Charlie', age=35), User(name='David', age=40)]
     tm.add_all(users)
-        
+    
     # 批量更新
-    users_to_update = tm.query(User).filter(User.age < 30).all()
-    tm.bulk_update(users_to_update, {"age": 30})
-        
+    tm.bulk_update(User, {"age": 30}, User.age < 30)
+    
     # 批量删除
-    users_to_delete = tm.query(User).filter(User.age > 50).all()
-    tm.bulk_delete(users_to_delete)
+    tm.bulk_delete(User, User.age > 50)
+
+3. 参数化查询（防SQL注入）:
+with TransactionManager(session) as tm:
+    query = "SELECT * FROM users WHERE username = :username AND age > :age"
+    params = {"username": user_input, "age": 18}
+    result = tm.execute_parameterized_query(query, params)
+    for row in result:
+        print(row)
+
+注意:
+- 使用 with 语句确保事务的正确处理
+- 对于直接的SQL操作，优先使用 execute_parameterized_query 方法以防止SQL注入
+- 批量操作可以显著提高大量数据处理的效率
 """
+
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import text
 from sqlalchemy import text
@@ -129,3 +131,17 @@ class TransactionManager:
     def get_affected_rows(self):
         """获取受影响的行数"""
         return self.affected_rows
+
+    def execute_parameterized_query(self, query, params=None):
+        """
+        执行参数化查询以防止SQL注入
+        :param query: SQL查询字符串，使用:param形式的参数占位符
+        :param params: 包含参数值的字典
+        :return: 查询结果
+        """
+        try:
+            result = self.session.execute(text(query), params or {})
+            return result
+        except Exception as e:
+            logger.error(f"执行参数化查询时出错: {e}")
+            raise

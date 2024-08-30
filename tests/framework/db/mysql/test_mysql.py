@@ -92,7 +92,7 @@ def test_batch_insert(session):
     logger.info("批量插入测试完成")
 
 def test_batch_update(session):
-    logger.info("开始测批量更��...")
+    logger.info("开始测批量更...")
     with TransactionManager(session) as tm:
         tm.query(Test_Table).update({Test_Table.age: Test_Table.age + 1})
     
@@ -199,13 +199,37 @@ def test_transaction_isolation(db_connection):
             user = session.query(Test_Table).filter_by(name='隔离测试').first()
             assert user is not None, "事务提交后数据不可见"
             assert user.name == '隔离测试' and user.age == 50, "提交后的数据不正确"
-        logger.info("事���隔离性测试完成：数据正确提交并可见")
+        logger.info("事隔离性测试完成：数据正确提交并可见")
     except AssertionError as e:
         logger.error(f"事务隔离性测试失败: {str(e)}")
     except Exception as e:
         logger.error(f"验证数据可见性时发生错误: {str(e)}")
 
     logger.info("事务隔离性测试完成")
+
+def test_parameterized_query(session):
+    logger.info("开始测试参数化查询（防SQL注入）...")
+    with TransactionManager(session) as tm:
+        # 插入测试数据
+        tm.add(Test_Table(name='Alice', age=25))
+        tm.add(Test_Table(name='Bob', age=30))
+        
+        # 正常查询
+        query = "SELECT * FROM test_table WHERE name = :name AND age > :age"
+        params = {"name": "Alice", "age": 20}
+        result = tm.execute_parameterized_query(query, params)
+        users = result.fetchall()
+        assert len(users) == 1, "正常查询失败"
+        assert users[0].name == 'Alice', "查询结果不匹配"
+        
+        # 尝试SQL注入
+        malicious_name = "Alice' OR '1'='1"
+        params = {"name": malicious_name, "age": 20}
+        result = tm.execute_parameterized_query(query, params)
+        users = result.fetchall()
+        assert len(users) == 0, "SQL注入防护失败"
+        
+    logger.info("参数化查询（防SQL注入）测试完成")
 
 if __name__ == "__main__":
     pytest.main([__file__, '-v'])
