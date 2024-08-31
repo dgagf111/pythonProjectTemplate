@@ -20,5 +20,7 @@ ENV REDIS_PORT=6379
 # 暴露API服务端口
 EXPOSE 8000
 
-# 运行应用
-CMD ["python", "main.py"]
+# # 运行应用
+# CMD ["python", "main.py"]
+# 运行测试和应用
+CMD ["sh", "-c", "python tests/run_tests.py all && python main.py"]

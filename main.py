@@ -117,6 +117,13 @@ def main():
         asyncio.run(graceful_shutdown())
 
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    main()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
+        # 如果传入 "test" 参数，只运行测试
+        import subprocess
+        subprocess.run(["python", "tests/run_tests.py", "all"])
+    else:
+        # 否则，正常启动应用
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        main()
