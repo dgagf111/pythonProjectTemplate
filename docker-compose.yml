@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - ENV=prod
+      - MYSQL_USERNAME=discordbot
+      - MYSQL_PASSWORD=96b0_8GoLl^y7!Vm(T.2fWY?dJe41HQv
+      - MYSQL_HOST=116.198.240.197
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=discordbot
+      - REDIS_HOST=host.docker.internal
+      - REDIS_PORT=6379

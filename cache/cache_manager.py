@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from config.config import config
 
 # 使用示例
 """
@@ -118,63 +119,21 @@ class BaseCacheManager(ABC):
         """
         pass
 
-from config.config import config as cfg
-
 def get_cache_manager():
-    """
-    根据配置文件创建并返回适当的缓存管理器实例。
-
-    此函数不接受任何参数，所有配置都从配置文件中读取。
-    支持的缓存类型包括 'memory' 和 'redis'。
-
-    返回:
-        BaseCacheManager: 缓存管理器实例，可能是 MemoryCacheManager 或 RedisCacheManager。
-
-    异常:
-        ValueError: 如果配置文件中指定了不支持的缓存类型或缺少必要的配置。
-
-    用法:
-        cache_manager = get_cache_manager()
-    """
-    cache_config = cfg.get_config().get('cache')
-    if not cache_config:
-        raise ValueError("缓存配置不存在")
-
-    cache_type = cache_config.get('type')
-    if not cache_type:
-        raise ValueError("缓存类型未指定")
-
-    if cache_type == 'memory':
-        from .memory_cache import MemoryCacheManager
-        ttl = cache_config.get('ttl')
-        max_size = cache_config.get('max_size')
-        if ttl is None or max_size is None:
-            raise ValueError("内存缓存配置不完整")
-        return MemoryCacheManager(ttl=ttl, max_size=max_size)
-    elif cache_type == 'redis':
+    cache_config = config.get_cache_config()
+    cache_type = cache_config.get('type', 'memory')
+    
+    if cache_type == 'redis':
         from .redis_cache import RedisCacheManager
-        redis_config = cache_config.get('redis')
-        if not redis_config:
-            raise ValueError("Redis配置不存在")
-        host = redis_config.get('host')
-        port = redis_config.get('port')
-        db = redis_config.get('db')
-        ttl = cache_config.get('ttl')
-        if None in (host, port, db, ttl):
-            raise ValueError("Redis缓存配置不完整")
+        redis_config = cache_config.get('redis', {})
+        host = redis_config.get('host', 'localhost')
+        port = redis_config.get('port', 6379)
+        db = redis_config.get('db', 0)
+        ttl = cache_config.get('ttl', 3600)
         return RedisCacheManager(host=host, port=port, db=db, ttl=ttl)
     else:
-        raise ValueError(f"不支持的缓存类型: {cache_type}")
+        from .memory_cache import MemoryCacheManager
+        max_size = cache_config.get('max_size', 1000)
+        ttl = cache_config.get('ttl', 3600)
+        return MemoryCacheManager(max_size=max_size, ttl=ttl)
 
-class MemoryCacheManager(BaseCacheManager):
-    def set_list(self, key, value_list, ttl=None):
-        self.set(key, value_list, ttl)
-
-    def get_list(self, key):
-        return self.get(key)
-
-    def set_hash(self, key, value_dict, ttl=None):
-        self.set(key, value_dict, ttl)
-
-    def get_hash(self, key):
-        return self.get(key)

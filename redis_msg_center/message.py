@@ -1,6 +1,10 @@
 import json
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta
 import uuid
+import pytz
+
+# 使用 pytz.UTC 替代 datetime.UTC
+UTC = pytz.UTC
 
 class Message:
     def __init__(self, topic, content, ttl=None):

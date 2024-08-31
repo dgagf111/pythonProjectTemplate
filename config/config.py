@@ -2,6 +2,7 @@ import yaml
 import os
 from typing import Dict, Any
 from dotenv import load_dotenv
+import re
 
 # 使用示例
 # from config.config import config
@@ -51,19 +52,32 @@ class Config:
         """获取主配置"""
         return self._config
 
+    def _parse_value(self, value):
+        if isinstance(value, str):
+            # 使用正则表达式匹配 ${VAR_NAME:-default} 模式
+            pattern = r'\$\{([^}^{]+)\}'
+            matches = re.finditer(pattern, value)
+            for match in matches:
+                env_var = match.group(1)
+                env_name, default = env_var.split(':-') if ':-' in env_var else (env_var, '')
+                env_value = os.environ.get(env_name, default)
+                value = value.replace(match.group(0), env_value)
+        return value
+
     def get_mysql_config(self) -> Dict[str, Any]:
         """
         获取MySQL配置
         优先使用环境变量中的配置，如果没有则使用配置文件中的值
         """
         mysql_config = self._config.get('mysql', {})
-        return {
-            'username': os.getenv('MYSQL_USERNAME', mysql_config.get('username')),
-            'password': os.getenv('MYSQL_PASSWORD', mysql_config.get('password')),
-            'host': os.getenv('MYSQL_HOST', mysql_config.get('host')),
-            'port': int(os.getenv('MYSQL_PORT', mysql_config.get('port', 3306))),
-            'database': os.getenv('MYSQL_DATABASE', mysql_config.get('database'))
-        }
+        parsed_config = {}
+        for k, v in mysql_config.items():
+            parsed_value = self._parse_value(v)
+            if k == 'port':
+                parsed_config[k] = int(parsed_value)
+            else:
+                parsed_config[k] = parsed_value
+        return parsed_config
 
     def get_log_config(self) -> Dict[str, Any]:
         """获取日志配置"""
@@ -101,7 +115,14 @@ class Config:
 
     def get_cache_config(self) -> Dict[str, Any]:
         """获取缓存配置"""
-        return self._config.get('cache', {})
+        cache_config = self._config.get('cache', {})
+        if cache_config.get('type') == 'redis':
+            redis_config = cache_config.get('redis', {})
+            redis_config['host'] = self._parse_value(redis_config.get('host', 'localhost'))
+            redis_config['port'] = int(self._parse_value(redis_config.get('port', '6379')))
+            redis_config['db'] = int(redis_config.get('db', 0))
+            cache_config['redis'] = redis_config
+        return cache_config
 
     def get_monitoring_config(self):
         """获取监控配置"""
