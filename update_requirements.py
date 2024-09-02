@@ -90,6 +90,7 @@ pip install fastapi uvicorn
 pip install httpx
 pip install pipreqs
 pip install setuptools
+pip install openpyxl
 """
 
 # 处理用户输入并生成 requirements

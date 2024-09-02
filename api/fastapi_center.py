@@ -6,7 +6,6 @@ import threading
 from fastapi.middleware.cors import CORSMiddleware
 from config.config import config
 import time
-import asyncio
 
 logger = get_logger()
 

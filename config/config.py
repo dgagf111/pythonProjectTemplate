@@ -67,7 +67,7 @@ class Config:
     def get_mysql_config(self) -> Dict[str, Any]:
         """
         获取MySQL配置
-        优先使用环境变量中的配置，如果没有则使用配置文件中的值
+        优先使用环境变量中的配置，如果没有才使用配置文件中的值
         """
         mysql_config = self._config.get('mysql', {})
         parsed_config = {}
