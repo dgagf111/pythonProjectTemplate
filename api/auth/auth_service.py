@@ -17,7 +17,7 @@ api_config = config.get_api_config()
 # 设置关键常量
 SECRET_KEY = api_config.get("secret_key")  # 用于JWT加密的密钥
 ALGORITHM = "HS256"  # JWT加密算法
-ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 访问令牌的过期时间（分钟）
+ACCESS_TOKEN_EXPIRE_MINUTES = eval(str(api_config.get("access_token_expire_minutes"))) # 访问令牌过期时间，单位：分钟，总时长：7天
 
 # 创建密码上下文，用于密码哈希和验证
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -149,8 +149,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
         
         # 验证token是否存在于token大map结构中
         token_map = cache_manager.get("auth_token_map") or {}
-        if token_map.get(username) != token:
+        stored_token = token_map.get(username)
+        if stored_token != token:
             raise credentials_exception
+        
+        # 检查token是否过期
+        exp = payload.get("exp")
+        if exp is None or datetime.fromtimestamp(exp, UTC) < datetime.now(UTC):
+            raise credentials_exception
+        
     except JWTError:
         raise credentials_exception
     
