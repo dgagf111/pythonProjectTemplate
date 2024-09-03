@@ -91,6 +91,8 @@ pip install httpx
 pip install pipreqs
 pip install setuptools
 pip install openpyxl
+pip install python-jose cryptography passlib bcrypt
+pip install python-multipart
 """
 
 # 处理用户输入并生成 requirements

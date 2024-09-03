@@ -1,10 +1,10 @@
 # mysql连接参数
 mysql:
-  username: discordbot
-  password: 96b0_8GoLl^y7!Vm(T.2fWY?dJe41HQv
-  host: ${MYSQL_HOST:-116.198.240.197}
-  port: ${MYSQL_PORT:-3306}
-  database: discordbot_test
+  username: ${MYSQL_USERNAME}
+  password: ${MYSQL_PASSWORD}
+  host: ${MYSQL_HOST}
+  port: ${MYSQL_PORT}
+  database: ${MYSQL_DATABASE}
 
 # 定时器任务配置
 tasks:
@@ -50,8 +50,8 @@ cache:
   ttl: 3600  # 默认缓存时间（秒），设置缓存项的生存时间
   max_size: 1000  # 最大缓存项数，仅适用于内存缓存，用于限制内存使用
   redis:
-    host: ${REDIS_HOST:-localhost}
-    port: ${REDIS_PORT:-6379}
+    host: ${REDIS_HOST}
+    port: ${REDIS_PORT}
     db: 0  # Redis数据库索引，用于选择特定的数据库
 
 # 监控配置
