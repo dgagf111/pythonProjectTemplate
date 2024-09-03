@@ -2,6 +2,7 @@ from sqlalchemy import Column, BigInteger, String, DateTime, Integer
 from sqlalchemy.sql import func
 from db.mysql.mysql import MySQL_Base
 
+# state的设计是大于等于0的都是可以访问的，小于0的都是不可访问的
 class User(MySQL_Base):
     __tablename__ = 'users'
 
@@ -19,7 +20,7 @@ class User(MySQL_Base):
     id_card_number = Column(String(50), unique=True)
     # 上一次登录时间
     last_login_at = Column(DateTime)
-    # 状态，-1: 已删除, -2: 已禁用, -3: 高风险, 0正常
+    # 状态，-1: 已删除, -2: 已禁用, 0正常，1: 高风险
     state = Column(Integer, default=0)
     # 创建时间
     created_at = Column(DateTime, server_default=func.now())
@@ -39,7 +40,7 @@ class Token(MySQL_Base):
     token_type = Column(Integer, nullable=False)
     # 过期时间
     expires_at = Column(DateTime, nullable=False)
-    # 状态，-1: 已删除, -2: 已禁用, -3: 高风险, 0正常
+    # 状态，-1: 已删除, -2: 已禁用, 0正常，1: 高风险
     state = Column(Integer, default=0)
     # 创建时间
     created_at = Column(DateTime, server_default=func.now())
@@ -59,7 +60,7 @@ class ThirdPartyToken(MySQL_Base):
     third_party_token = Column(String(255), unique=True, nullable=False)
     # 过期时间
     expires_at = Column(DateTime, nullable=False)
-    # 状态，-1: 已删除, -2: 已禁用, -3: 高风险, 0正常
+    # 状态，-1: 已删除, -2: 已禁用, 0正常，1: 高风险
     state = Column(Integer, default=0)
     # 创建时间
     created_at = Column(DateTime, server_default=func.now())
