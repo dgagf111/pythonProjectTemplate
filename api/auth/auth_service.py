@@ -1,4 +1,6 @@
-from fastapi import Depends, HTTPException, status
+import os
+from cache.cache_manager import get_cache_manager
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -13,23 +15,87 @@ from sqlalchemy.orm import Session
 api_config = config.get_api_config()
 
 # 设置关键常量
-SECRET_KEY = api_config.get("secret_key")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = api_config.get("secret_key")  # 用于JWT加密的密钥
+ALGORITHM = "HS256"  # JWT加密算法
+ACCESS_TOKEN_EXPIRE_MINUTES = 30  # 访问令牌的过期时间（分钟）
 
+# 创建密码上下文，用于密码哈希和验证
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# 创建OAuth2密码承载流程
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# 创建数据库连接
-db = MySQL_Database()
+# 使用缓存管理器实例
+cache_manager = get_cache_manager()
+
+def get_db():
+    """
+    创建并yield一个数据库会话。
+    在请求结束时自动关闭会话。
+    """
+    db = MySQL_Database()
+    try:
+        yield db.get_session()
+    finally:
+        db.close_session()
+
+def generate_secret_key():
+    """
+    生成一个随机的密钥。
+    用于为每个用户创建唯一的密钥。
+    """
+    return os.urandom(32).hex()
+
+def save_secret_key(username: str, secret_key: str):
+    """
+    将用户的密钥保存到缓存中的大map结构。
+    
+    :param username: 用户名
+    :param secret_key: 生成的密钥
+    """
+    auth_map = cache_manager.get("auth_map") or {}
+    auth_map[f"secret_key:{username}"] = secret_key
+    cache_manager.set("auth_map", auth_map, ttl=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+
+def get_secret_key(username: str):
+    """
+    从缓存中的大map结构获取用户的密钥。
+    
+    :param username: 用户名
+    :return: 用户的密钥，如果不存在则返回None
+    """
+    auth_map = cache_manager.get("auth_map") or {}
+    return auth_map.get(f"secret_key:{username}")
 
 def verify_password(plain_password, hashed_password):
+    """
+    验证明文密码是否与哈希密码匹配。
+    
+    :param plain_password: 明文密码
+    :param hashed_password: 哈希后的密码
+    :return: 如果密码匹配返回True，否则返回False
+    """
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_user(session: Session, username: str):
+    """
+    根据用户名从数据库中获取用户。
+    
+    :param session: 数据库会话
+    :param username: 用户名
+    :return: 用户对象，如果不存在则返回None
+    """
     return session.query(User).filter(User.username == username, User.state >= 0).first()
 
 def authenticate_user(session: Session, username: str, password: str):
+    """
+    验证用户的凭据。
+    
+    :param session: 数据库会话
+    :param username: 用户名
+    :param password: 密码
+    :return: 如果验证成功返回用户对象，否则返回False
+    """
     user = get_user(session, username)
     if not user:
         return False
@@ -37,7 +103,15 @@ def authenticate_user(session: Session, username: str, password: str):
         return False
     return user
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, username: str, expires_delta: Optional[timedelta] = None):
+    """
+    创建访问令牌并将其存储在大map结构中。
+    
+    :param data: 要编码到令牌中的数据
+    :param username: 用户名，用于获取用户特定的密钥
+    :param expires_delta: 令牌的过期时间增量
+    :return: 编码后的JWT令牌
+    """
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
@@ -45,9 +119,23 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         expire = datetime.now(UTC) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    
+    # 将token存储在大map结构中
+    auth_map = cache_manager.get("auth_map") or {}
+    auth_map[f"token:{username}"] = encoded_jwt
+    cache_manager.set("auth_map", auth_map, ttl=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    
     return encoded_jwt
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_db)):
+    """
+    从JWT令牌中获取当前用户，并验证token是否存在于大map结构中。
+    
+    :param token: JWT令牌
+    :param session: 数据库会话
+    :return: 当前用户对象
+    :raises HTTPException: 如果凭据无效或用户不存在
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -58,12 +146,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
+        
+        # 验证token是否存在于大map结构中
+        auth_map = cache_manager.get("auth_map") or {}
+        if auth_map.get(f"token:{username}") != token:
+            raise credentials_exception
     except JWTError:
         raise credentials_exception
     
-    session = db.get_session()
     user = get_user(session, username)
-    session.close()
     if user is None:
         raise credentials_exception
     return user
