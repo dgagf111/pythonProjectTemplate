@@ -1,14 +1,14 @@
-from api.fastapi_center import fastapi_center
 from config.config import config
 import importlib
 from log.logHelper import get_logger
 from scheduler.scheduler_center import scheduler_center
 import signal
-from redis_msg_center.main import redis_msg_center
 from monitoring.main import monitoring_center
 import os
 import asyncio
 import threading
+from fastapi import FastAPI
+from api.api_router import api_router
 
 """
 全局日志实例使用说明：
@@ -75,9 +75,7 @@ def load_and_run_modules():
 async def graceful_shutdown():
     logger.info("开始优雅关闭...")
     scheduler_center.shutdown()
-    redis_msg_center.shutdown()
     monitoring_center.shutdown()
-    await fastapi_center.shutdown()
     logger.info("应用程序已关闭")
     os._exit(0)  # 使用 os._exit() 强制退出
 
@@ -93,20 +91,12 @@ def main():
         scheduler_center.start()
         logger.info("调度中心已启动")
 
-        # 启动Redis消息中心
-        redis_msg_center.start()
-        logger.info("Redis消息中心已启动")
-
         # 启动监控中心
         monitoring_center.start()
         logger.info("监控中心已启动")
 
         # 加载并运行模块
         load_and_run_modules()
-
-        # 启动FastAPI
-        fastapi_center.start()
-        logger.info("FastAPI已启动")
 
         # 使用 signal.pause() 等待信号
         logger.info("主程序进入等待状态，按 Ctrl+C 或发送 SIGTERM 信号来停止服务")
@@ -127,3 +117,14 @@ if __name__ == "__main__":
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
         main()
+
+app = FastAPI()
+
+# 包含 API 路由器
+app.include_router(api_router)
+
+# 其他应用设置...
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

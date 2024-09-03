@@ -16,6 +16,8 @@ ENV MYSQL_HOST=116.198.240.197
 ENV MYSQL_PORT=3306
 ENV REDIS_HOST=host.docker.internal
 ENV REDIS_PORT=6379
+# 设置API版本，优先使用环境变量，如果没有设置则使用配置文件中的值
+ENV API_VERSION=v1
 
 # 暴露API服务端口
 EXPOSE 8000
