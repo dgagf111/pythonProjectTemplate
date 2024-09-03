@@ -48,24 +48,24 @@ def generate_secret_key():
 
 def save_secret_key(username: str, secret_key: str):
     """
-    将用户的密钥保存到缓存中的大map结构。
+    将用户的密钥保存到缓存中的secret_key大map结构。
     
     :param username: 用户名
     :param secret_key: 生成的密钥
     """
-    auth_map = cache_manager.get("auth_map") or {}
-    auth_map[f"secret_key:{username}"] = secret_key
-    cache_manager.set("auth_map", auth_map, ttl=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    secret_key_map = cache_manager.get("auth_secret_key_map") or {}
+    secret_key_map[username] = secret_key
+    cache_manager.set("auth_secret_key_map", secret_key_map, ttl=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
 
 def get_secret_key(username: str):
     """
-    从缓存中的大map结构获取用户的密钥。
+    从缓存中的secret_key大map结构获取用户的密钥。
     
     :param username: 用户名
     :return: 用户的密钥，如果不存在则返回None
     """
-    auth_map = cache_manager.get("auth_map") or {}
-    return auth_map.get(f"secret_key:{username}")
+    secret_key_map = cache_manager.get("auth_secret_key_map") or {}
+    return secret_key_map.get(username)
 
 def verify_password(plain_password, hashed_password):
     """
@@ -105,7 +105,7 @@ def authenticate_user(session: Session, username: str, password: str):
 
 def create_access_token(data: dict, username: str, expires_delta: Optional[timedelta] = None):
     """
-    创建访问令牌并将其存储在大map结构中。
+    创建访问令牌并将其存储在token大map结构中。
     
     :param data: 要编码到令牌中的数据
     :param username: 用户名，用于获取用户特定的密钥
@@ -120,16 +120,16 @@ def create_access_token(data: dict, username: str, expires_delta: Optional[timed
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     
-    # 将token存储在大map结构中
-    auth_map = cache_manager.get("auth_map") or {}
-    auth_map[f"token:{username}"] = encoded_jwt
-    cache_manager.set("auth_map", auth_map, ttl=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    # 将token存储在token大map结构中
+    token_map = cache_manager.get("auth_token_map") or {}
+    token_map[username] = encoded_jwt
+    cache_manager.set("auth_token_map", token_map, ttl=ACCESS_TOKEN_EXPIRE_MINUTES * 60)
     
     return encoded_jwt
 
 async def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_db)):
     """
-    从JWT令牌中获取当前用户，并验证token是否存在于大map结构中。
+    从JWT令牌中获取当前用户，并验证token是否存在于token大map结构中。
     
     :param token: JWT令牌
     :param session: 数据库会话
@@ -147,9 +147,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
         if username is None:
             raise credentials_exception
         
-        # 验证token是否存在于大map结构中
-        auth_map = cache_manager.get("auth_map") or {}
-        if auth_map.get(f"token:{username}") != token:
+        # 验证token是否存在于token大map结构中
+        token_map = cache_manager.get("auth_token_map") or {}
+        if token_map.get(username) != token:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
