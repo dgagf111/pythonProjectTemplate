@@ -28,30 +28,6 @@ class Config:
         self._config = None  # 存储主配置
         self._load_config()  # 加载配置
 
-    def _load_config(self):
-        # 获取当前工作目录和文件目录
-        current_working_directory = os.getcwd()
-        current_file_path = os.path.abspath(__file__)
-        current_directory = os.path.dirname(current_file_path)
-
-        # 加载环境配置文件（env.yaml）
-        with open(os.path.join(current_working_directory, 'env.yaml'), 'r') as file:
-            self._env_config = yaml.safe_load(file)
-
-        # 确定当前环境（dev, test, prod等）
-        env = os.getenv('ENV', self._env_config.get('env', 'dev'))
-        # 加载对应环境的配置文件（如dev.yaml）
-        with open(os.path.join(current_directory, f'{env}.yaml'), 'r') as file:
-            self._config = yaml.safe_load(file)
-
-    def get_env_config(self) -> Dict[str, Any]:
-        """获取环境配置"""
-        return self._env_config
-
-    def get_config(self) -> Dict[str, Any]:
-        """获取主配置"""
-        return self._config
-
     def _parse_value(self, value):
         if isinstance(value, str):
             # 使用正则表达式匹配 ${VAR_NAME:-default} 模式
@@ -64,6 +40,41 @@ class Config:
                 value = value.replace(match.group(0), env_value)
         return value
 
+    def _parse_config(self, config):
+        if isinstance(config, dict):
+            return {k: self._parse_config(v) for k, v in config.items()}
+        elif isinstance(config, list):
+            return [self._parse_config(v) for v in config]
+        else:
+            return self._parse_value(config)
+
+    def _load_yaml_file(self, file_path):
+        with open(file_path, 'r') as file:
+            config = yaml.safe_load(file)
+        return self._parse_config(config)
+
+    def _load_config(self):
+        load_dotenv()  # 加载 .env 文件中的环境变量
+        current_working_directory = os.getcwd()
+        current_file_path = os.path.abspath(__file__)
+        current_directory = os.path.dirname(current_file_path)
+
+        # 加载环境配置文件（env.yaml）
+        self._env_config = self._load_yaml_file(os.path.join(current_working_directory, 'env.yaml'))
+
+        # 确定当前环境（dev, test, prod等）
+        env = os.getenv('ENV', self._env_config.get('env', 'dev'))
+        # 加载对应环境的配置文件（如dev.yaml）
+        self._config = self._load_yaml_file(os.path.join(current_directory, f'{env}.yaml'))
+
+    def get_env_config(self) -> Dict[str, Any]:
+        """获取环境配置"""
+        return self._env_config
+
+    def get_config(self) -> Dict[str, Any]:
+        """获取主配置"""
+        return self._config
+
     def get_mysql_config(self) -> Dict[str, Any]:
         """
         获取MySQL配置
@@ -72,11 +83,10 @@ class Config:
         mysql_config = self._config.get('mysql', {})
         parsed_config = {}
         for k, v in mysql_config.items():
-            parsed_value = self._parse_value(v)
             if k == 'port':
-                parsed_config[k] = int(parsed_value)
+                parsed_config[k] = int(v)
             else:
-                parsed_config[k] = parsed_value
+                parsed_config[k] = v
         return parsed_config
 
     def get_log_config(self) -> Dict[str, Any]:
@@ -151,6 +161,11 @@ def run_tests():
     
     assert config.get_log_config() is not None, "日志配置加载失败"
     assert config.get_module_config() is not None, "模块配置加载失败"
+
+    # 测试API配置
+    api_config = config.get_api_config()
+    assert 'api_version' in api_config, "API配置缺少api_version"
+    assert api_config['api_version'] != '${API_VERSION}', "API版本未被正确替换"
 
     print("所有测试通过！")
 
