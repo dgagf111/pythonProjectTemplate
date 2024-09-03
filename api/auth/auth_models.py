@@ -36,7 +36,7 @@ class Token(MySQL_Base):
     user_id = Column(BigInteger, nullable=False)
     # 令牌
     token = Column(String(255), unique=True, nullable=False)
-    # 令牌类型
+    # 令牌类型，0用户登录持久化数据，1用户API调用的token
     token_type = Column(Integer, nullable=False)
     # 过期时间
     expires_at = Column(DateTime, nullable=False)
