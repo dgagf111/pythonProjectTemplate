@@ -17,6 +17,10 @@ sys.path.insert(0, project_root)
 from config.config import config as app_config
 from db.mysql.mysql import MySQL_Base
 
+# ***************************只要在这里添加模型，就可以自动生成迁移脚本，并完成迁移***************************
+from api.auth_models import User, Token, ThirdPartyToken
+# ***************************只要在这里添加模型，就可以自动生成迁移脚本，并完成迁移***************************
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config

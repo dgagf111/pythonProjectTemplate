@@ -5,6 +5,9 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, UTC
 from typing import Optional
 from config.config import config
+from db.mysql.mysql import MySQL_Database
+from .auth_models import User, Token
+from sqlalchemy.orm import Session
 
 # 获取API配置
 api_config = config.get_api_config()
@@ -14,32 +17,23 @@ SECRET_KEY = api_config.get("secret_key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# 模拟用户数据库
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-    }
-}
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# 创建数据库连接
+db = MySQL_Database()
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return user_dict
+def get_user(session: Session, username: str):
+    return session.query(User).filter(User.username == username, User.state >= 0).first()
 
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
+def authenticate_user(session: Session, username: str, password: str):
+    user = get_user(session, username)
     if not user:
         return False
-    if not verify_password(password, user["hashed_password"]):
+    if not verify_password(password, user.password_hash):
         return False
     return user
 
@@ -66,7 +60,25 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=username)
+    
+    session = db.get_session()
+    user = get_user(session, username)
+    session.close()
     if user is None:
         raise credentials_exception
     return user
+
+# 新增函数：创建新用户
+def create_user(session: Session, username: str, password: str, email: str):
+    hashed_password = pwd_context.hash(password)
+    new_user = User(username=username, password_hash=hashed_password, email=email)
+    session.add(new_user)
+    session.commit()
+    return new_user
+
+# 新增函数：保存token
+def save_token(session: Session, user_id: int, token: str, token_type: int, expires_at: datetime):
+    new_token = Token(user_id=user_id, token=token, token_type=token_type, expires_at=expires_at)
+    session.add(new_token)
+    session.commit()
+    return new_token

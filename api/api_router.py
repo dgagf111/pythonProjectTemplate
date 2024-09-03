@@ -2,8 +2,10 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from config.config import config
-from .auth import authenticate_user, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, fake_users_db
+from .auth import authenticate_user, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from datetime import timedelta
+from db.mysql.mysql import MySQL_Database
+from .auth_models import User
 
 # 加载配置
 api_config = config.get_api_config()
@@ -16,22 +18,27 @@ api_router = APIRouter(prefix=f"/api/{api_version}")
 
 @api_router.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    db = MySQL_Database()
+    session = db.get_session()
+    try:
+        user = authenticate_user(session, form_data.username, form_data.password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user["username"]}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
+        return {"access_token": access_token, "token_type": "bearer"}
+    finally:
+        session.close()
 
 @api_router.get("/test")
-async def test_route(current_user: dict = Depends(get_current_user)):
-    return {"message": "Test route", "version": api_version, "user": current_user["username"]}
+async def test_route(current_user: User = Depends(get_current_user)):
+    return {"message": "Test route", "version": api_version, "user": current_user.username}
 
 # 这里可以添加其他的路由器或路由
 # api_router.tags = ["api"]
