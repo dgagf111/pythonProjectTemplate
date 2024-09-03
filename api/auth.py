@@ -4,9 +4,13 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, UTC
 from typing import Optional
+from config.config import config
+
+# 获取API配置
+api_config = config.get_api_config()
 
 # 设置关键常量
-SECRET_KEY = "your-secret-key"  # 在实际应用中，请使用更安全的密钥
+SECRET_KEY = api_config.get("secret_key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

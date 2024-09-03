@@ -8,8 +8,8 @@ from datetime import timedelta
 # 加载配置
 api_config = config.get_api_config()
 
-# 优先使用环境变量，如果没有设置则使用配置文件中的值
-api_version = os.getenv('API_VERSION', api_config['version'])
+# 获取API版本
+api_version = api_config.get('api_version')
 
 # 创建一个带有动态前缀的 APIRouter
 api_router = APIRouter(prefix=f"/api/{api_version}")
