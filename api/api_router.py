@@ -2,10 +2,10 @@ import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from config.config import config
-from .auth import authenticate_user, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+from .auth.auth_service import authenticate_user, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from datetime import timedelta
 from db.mysql.mysql import MySQL_Database
-from .auth_models import User
+from .auth.auth_models import User
 
 # 加载配置
 api_config = config.get_api_config()

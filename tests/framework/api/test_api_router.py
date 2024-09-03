@@ -2,10 +2,10 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from api.api_router import api_router
 from config.config import config
-from api.auth import create_access_token, create_user
+from api.auth.auth_service import create_access_token, create_user
 from datetime import timedelta
 from db.mysql.mysql import MySQL_Database
-from api.auth_models import User
+from api.auth.auth_models import User
 
 # 创建一个测试用的 FastAPI 应用
 app = FastAPI()
