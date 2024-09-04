@@ -1,13 +1,14 @@
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from api.api_router import api_router, API_PREFIX
-from api.auth.token_service import create_tokens
+from api.auth.token_service import create_tokens, revoke_tokens
 from config.config import config
 from api.auth.auth_service import create_access_token, create_user, ALGORITHM, SECRET_KEY, get_current_user, get_password_hash
 from datetime import timedelta
 from db.mysql.mysql import MySQL_Database
 from api.auth.auth_models import User
 from jose import jwt
+from api.exception.custom_exceptions import InvalidCredentialsException, InvalidTokenException, TokenRevokedException, UserNotFoundException
 
 # 创建一个测试用的 FastAPI 应用
 app = FastAPI()
@@ -136,3 +137,41 @@ def test_get_current_user(session):
     response = client.get(f"{expected_prefix}/test", headers=headers)
     assert response.status_code == 200
     assert response.json()["user"] == "testuser"
+
+# 添加以下测试函数
+
+def test_invalid_credentials():
+    response = client.post(f"{expected_prefix}/token", data={"username": "wronguser", "password": "wrongpassword"})
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Incorrect username or password"}
+
+def test_invalid_token_exception():
+    invalid_token = "invalid_token"
+    headers = {"Authorization": f"Bearer {invalid_token}"}
+    response = client.get(f"{expected_prefix}/test", headers=headers)
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Invalid token"}
+
+def test_token_revoked_exception(session):
+    user = setup_test_user(session)
+    access_token, _ = create_tokens(user.username)
+    revoke_tokens(user.username)
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = client.get(f"{expected_prefix}/test", headers=headers)
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Token has been revoked"}
+
+def test_user_not_found_exception(session):
+    # 首先创建一个用户并获取token
+    user = setup_test_user(session)
+    access_token, _ = create_tokens(user.username)
+    
+    # 然后删除这个用户
+    session.delete(user)
+    session.commit()
+    
+    # 尝试使用token访问
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = client.get(f"{expected_prefix}/test", headers=headers)
+    assert response.status_code == 404
+    assert response.json() == {"detail": "User not found"}

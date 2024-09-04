@@ -1,5 +1,5 @@
 import os
-from fastapi import Depends, HTTPException, status, Header
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -10,9 +10,10 @@ from cache.cache_manager import get_cache_manager
 from config.config import config
 from db.mysql.mysql import MySQL_Database
 from .auth_models import User, Token
-from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, create_refresh_token
+from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from sqlalchemy.orm import Session
 from cache.cache_keys_manager import CacheKeysManager
+from api.exception.custom_exceptions import InvalidTokenException, UserNotFoundException, InvalidCredentialsException
 
 # 获取API配置
 api_config = config.get_api_config()
@@ -21,7 +22,7 @@ api_config = config.get_api_config()
 cache_keys = CacheKeysManager()
 
 # 设置关键常量
-SECRET_KEY = api_config.get("secret_key")  # ��于JWT加密的密钥
+SECRET_KEY = api_config.get("secret_key")  # 于JWT加密的密钥
 ALGORITHM = "HS256"  # JWT加密算法
 ACCESS_TOKEN_EXPIRE_MINUTES = eval(str(api_config.get("access_token_expire_minutes"))) # 访问令牌过期时间，单位：分钟，总时长：7天
 
@@ -129,27 +130,23 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
     从JWT令牌中获取当前用户，并验证token是否存在于token大map结构中。
     
     :param token: JWT令牌
-    :param session: ���据库会话
+    :param session: 数据库会话
     :return: 当前用户对象
-    :raises HTTPException: 如果凭据无效或用户不存在
+    :raises InvalidTokenException: 如果凭据无效
+    :raises UserNotFoundException: 如果用户不存在
     """
-    payload = verify_token(token)
-    username: str = payload.get("sub")
-    if username is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    user = get_user(session, username)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
+    try:
+        payload = verify_token(token)
+        username: str = payload.get("sub")
+        if username is None:
+            raise InvalidTokenException()
+        
+        user = get_user(session, username)
+        if user is None:
+            raise UserNotFoundException()
+        return user
+    except JWTError:
+        raise InvalidTokenException()
 
 # 新增函数：创建新用户
 def create_user(session: Session, username: str, password: str, email: str):
@@ -176,13 +173,7 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 async def get_current_app(api_key: str = Depends(api_key_header), session: Session = Depends(get_db)):
     if not api_key:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key is missing",
-        )
+        raise InvalidCredentialsException(detail="API key is missing")
     if not verify_permanent_token(session, api_key):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid API key",
-        )
+        raise InvalidTokenException(detail="Invalid API key")
     return api_key

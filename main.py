@@ -9,6 +9,8 @@ import asyncio
 import threading
 from fastapi import FastAPI
 from api.api_router import api_router
+from api.exception.custom_exceptions import APIException
+from fastapi.responses import JSONResponse
 
 """
 全局日志实例使用说明：
@@ -122,6 +124,14 @@ app = FastAPI()
 
 # 包含 API 路由器
 app.include_router(api_router)
+
+# 全局异常处理
+@app.exception_handler(APIException)
+async def api_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
 
 # 其他应用设置...
 

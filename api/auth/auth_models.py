@@ -2,7 +2,6 @@ from sqlalchemy import Column, BigInteger, String, DateTime, Integer
 from sqlalchemy.sql import func
 from db.mysql.mysql import MySQL_Base
 from pydantic import BaseModel
-from datetime import datetime
 from zoneinfo import ZoneInfo
 from config.config import config
 

@@ -1,16 +1,16 @@
 from datetime import datetime, timedelta, UTC, timezone
-from typing import Optional, Tuple
-from jose import jwt, JWTError
-from fastapi import HTTPException, status
+from typing import Tuple
+from jose import jwt
 from config.config import config
 from cache.cache_manager import get_cache_manager
 from log.logHelper import get_logger
 from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_jwt_token, create_access_token, create_refresh_token
 from cache.cache_keys_manager import CacheKeysManager
-from .auth_models import ThirdPartyToken, Token
+from .auth_models import Token
 from sqlalchemy.orm import Session
 import secrets
 from zoneinfo import ZoneInfo
+from api.exception.custom_exceptions import InvalidTokenException, TokenRevokedException
 
 # 日志
 logger = get_logger()
@@ -57,34 +57,34 @@ def verify_token(token: str) -> dict:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
+            raise InvalidTokenException()
         
         token_map = cache_manager.get(cache_keys.get_auth_token_map_key()) or {}
         logger.debug(f"Retrieved token_map: {token_map}")
         
         if username not in token_map:
             logger.error(f"Username {username} not found in token_map")
-            raise HTTPException(status_code=401, detail="Token has been revoked")
+            raise TokenRevokedException()
         
         user_tokens = token_map[username]
         if not isinstance(user_tokens, dict):
             logger.error(f"Invalid token data for user {username}: {user_tokens}")
-            raise HTTPException(status_code=401, detail="Token has been revoked")
+            raise TokenRevokedException()
         
         if user_tokens.get("access_token") != token and user_tokens.get("refresh_token") != token:
             logger.error(f"Token mismatch for user {username}")
-            raise HTTPException(status_code=401, detail="Token has been revoked")
+            raise TokenRevokedException()
         
         return payload
     except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise InvalidTokenException()
 
 def refresh_access_token(refresh_token: str):
     try:
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         if payload.get("type") != "refresh":
-            raise HTTPException(status_code=401, detail="Invalid token type")
+            raise InvalidTokenException(detail="Invalid token type")
         
         token_map = cache_manager.get(cache_keys.get_auth_token_map_key())
         logger.debug(f"Retrieved token_map for refresh: {token_map}")
@@ -93,7 +93,7 @@ def refresh_access_token(refresh_token: str):
             token_map = {}
         if username not in token_map:
             logger.error(f"Username {username} not found in token_map during refresh")
-            raise HTTPException(status_code=401, detail="Token has been revoked")
+            raise InvalidTokenException(detail="Token has been revoked")
         
         new_access_token = create_access_token(data={"sub": username}, username=username)
         new_refresh_token = create_refresh_token(data={"sub": username}, username=username)
@@ -108,7 +108,7 @@ def refresh_access_token(refresh_token: str):
         
         return new_access_token, new_refresh_token
     except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+        raise InvalidTokenException(detail="Invalid or expired refresh token")
 
 def revoke_tokens(username: str):
     token_map = cache_manager.get(cache_keys.get_auth_token_map_key()) or {}
