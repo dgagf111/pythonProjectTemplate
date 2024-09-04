@@ -1,6 +1,7 @@
 from sqlalchemy import Column, BigInteger, String, DateTime, Integer
 from sqlalchemy.sql import func
 from db.mysql.mysql import MySQL_Base
+from pydantic import BaseModel
 
 # state的设计是大于等于0的都是可以访问的，小于0的都是不可访问的
 class User(MySQL_Base):
@@ -66,3 +67,8 @@ class ThirdPartyToken(MySQL_Base):
     created_at = Column(DateTime, server_default=func.now())
     # 更新时间
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    refresh_token: str

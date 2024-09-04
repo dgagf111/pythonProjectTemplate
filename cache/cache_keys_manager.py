@@ -21,10 +21,13 @@ class CacheKeysManager:
             yaml_data = yaml.safe_load(file)
         
         return yaml_data.get('cache_keys', {})
+    # 获取 auth_token_map_key
+    def get_auth_token_map_key(self):
+        return self.cache_keys.get('auth_token_map')
 
-    # 获取 test_key
-    def get_test_key(self):
-        return self.cache_keys.get('test_key')
+    # 获取 auth_secret_key_map_key
+    def get_auth_secret_key_map_key(self):
+        return self.cache_keys.get('auth_secret_key_map')
 
 # 使用示例
 cache_keys_manager = CacheKeysManager()
@@ -37,13 +40,13 @@ if __name__ == "__main__":
     # 测试 _load_cache_keys 方法
     assert isinstance(manager.cache_keys, dict), "cache_keys 应该是一个字典"
 
-    # 测试 get_test_key 方法
-    test_key = manager.get_test_key()
-    assert test_key is not None, "test_key 不应为 None"
-    assert isinstance(test_key, str), "test_key 应该是一个字符串"
+    # 测试 get_auth_token_map_key 方法
+    auth_token_map_key = manager.get_auth_token_map_key()
+    assert auth_token_map_key is not None, "auth_token_map_key 不应为 None"
+    assert isinstance(auth_token_map_key, str), "auth_token_map_key 应该是一个字符串"
 
     # 测试 yaml 文件是否正确加载
-    assert 'test_key' in manager.cache_keys, "cache_keys 中应包含 'test_key'"
+    assert 'auth_token_map' in manager.cache_keys, "cache_keys 中应包含 'auth_token_map'"
 
     print("所有测试通过！")
 

@@ -1,8 +1,9 @@
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
-from api.api_router import api_router
+from api.api_router import api_router, API_PREFIX
+from api.auth.token_service import create_tokens
 from config.config import config
-from api.auth.auth_service import create_access_token, create_user, ALGORITHM, SECRET_KEY, get_current_user
+from api.auth.auth_service import create_access_token, create_user, ALGORITHM, SECRET_KEY, get_current_user, get_password_hash
 from datetime import timedelta
 from db.mysql.mysql import MySQL_Database
 from api.auth.auth_models import User
@@ -41,37 +42,28 @@ def session(db):
     yield session
     session.close()
 
-def setup_test_user():
-    db = MySQL_Database()
-    session = db.get_session()
-    try:
-        existing_user = session.query(User).filter_by(username="testuser").first()
-        if existing_user:
-            return existing_user
-        test_user = create_user(session, "testuser", "testpassword", "test@example.com")
-        session.refresh(test_user)
-        return test_user
-    finally:
-        session.close()
+def setup_test_user(session):
+    existing_user = session.query(User).filter_by(username="testuser").first()
+    if existing_user:
+        return existing_user
+    hashed_password = get_password_hash("testpassword")
+    test_user = User(username="testuser", password_hash=hashed_password, email="test@example.com")
+    session.add(test_user)
+    session.commit()
+    return test_user
 
 def get_test_token():
-    test_user = setup_test_user()
     db = MySQL_Database()
     session = db.get_session()
     try:
-        user = session.query(User).filter_by(username=test_user.username).first()
-        access_token_expires = timedelta(minutes=30)
-        access_token = create_access_token(
-            data={"sub": user.username}, username=user.username, expires_delta=access_token_expires
-        )
+        test_user = setup_test_user(session)
+        access_token, _ = create_tokens(test_user.username)
         return access_token
     finally:
         session.close()
 
 # 设置预期的 API 前缀
-api_config = config.get_api_config()
-expected_version = api_config.get('api_version', 'v1')
-expected_prefix = f"/api/{expected_version}"
+expected_prefix = API_PREFIX
 
 def test_api_version_and_prefix():
     api_config = config.get_api_config()
@@ -125,19 +117,22 @@ def test_unauthenticated_access():
     assert response.status_code == 401
 
 def test_login_process():
-    setup_test_user()  # 确保测试用户存在
-    response = client.post(f"{expected_prefix}/token", data={"username": "testuser", "password": "testpassword"})
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}. Response: {response.json()}"
-    assert "access_token" in response.json()
-    assert response.json()["token_type"] == "bearer"
+    db = MySQL_Database()
+    session = db.get_session()
+    try:
+        setup_test_user(session)  # 确保测试用户存在
+        response = client.post(f"{expected_prefix}/token", data={"username": "testuser", "password": "testpassword"})
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}. Response: {response.json()}"
+        assert "access_token" in response.json()
+        assert response.json()["token_type"] == "bearer"
+    finally:
+        session.close()
 
 # 这个测试可能需要模拟数据库会话
-def test_get_current_user(mocker):
-    mock_get_user = mocker.patch('api.auth.auth_service.get_user')
-    mock_get_user.return_value = User(username="testuser")  # 假设User是你的用户模型
-    
-    token = create_access_token(data={"sub": "testuser"}, username="testuser")
-    headers = {"Authorization": f"Bearer {token}"}
+def test_get_current_user(session):
+    user = setup_test_user(session)
+    access_token, _ = create_tokens(user.username)
+    headers = {"Authorization": f"Bearer {access_token}"}
     response = client.get(f"{expected_prefix}/test", headers=headers)
     assert response.status_code == 200
     assert response.json()["user"] == "testuser"
