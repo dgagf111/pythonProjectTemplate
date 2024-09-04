@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
+from config.config import config
 from zoneinfo import ZoneInfo
-UTC = ZoneInfo("UTC")
+
+TIME_ZONE = ZoneInfo(config.get_time_zone())
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
@@ -93,9 +95,12 @@ def test_permanent_token_expiration(session):
     response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
     assert response.status_code == 200
     
-    # 模拟token过期
+    # 验证token的过期时间是否正确设置
     stored_token = session.query(Token).filter_by(token=token, token_type=1).first()
-    stored_token.expires_at = datetime.now(UTC) - timedelta(days=1)
+    assert stored_token.expires_at.replace(tzinfo=TIME_ZONE) > (datetime.now(TIME_ZONE) + timedelta(days=365*999))  # 确保至少设置了999年以后
+    
+    # 将token的过期时间设置为过去的时间来模拟过期
+    stored_token.expires_at = datetime.now(TIME_ZONE) - timedelta(days=1)
     session.commit()
     
     # 尝试使用过期的token

@@ -2,6 +2,11 @@ from sqlalchemy import Column, BigInteger, String, DateTime, Integer
 from sqlalchemy.sql import func
 from db.mysql.mysql import MySQL_Base
 from pydantic import BaseModel
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from config.config import config
+
+TIME_ZONE = ZoneInfo(config.get_time_zone())
 
 # state的设计是大于等于0的都是可以访问的，小于0的都是不可访问的
 class User(MySQL_Base):
@@ -40,13 +45,18 @@ class Token(MySQL_Base):
     # 令牌类型，0用户登录持久化数据，1用户API调用的token
     token_type = Column(Integer, nullable=False)
     # 过期时间
-    expires_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
     # 状态，-1: 已删除, -2: 已禁用, 0正常，1: 高风险
     state = Column(Integer, default=0)
     # 创建时间
-    created_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     # 更新时间
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.expires_at and self.expires_at.tzinfo is None:
+            self.expires_at = self.expires_at.replace(tzinfo=TIME_ZONE)
 
 class ThirdPartyToken(MySQL_Base):
     __tablename__ = 'third_party_tokens'

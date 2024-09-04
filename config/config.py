@@ -142,6 +142,9 @@ class Config:
         """获取API服务器配置"""
         return self._config.get('api', {})
 
+    def get_time_zone(self):
+        return self._env_config.get('TIME_ZONE')
+
 # 全局配置实例
 config = Config()
 # 测试代码

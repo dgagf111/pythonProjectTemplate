@@ -10,11 +10,13 @@ from cache.cache_keys_manager import CacheKeysManager
 from .auth_models import ThirdPartyToken, Token
 from sqlalchemy.orm import Session
 import secrets
+from zoneinfo import ZoneInfo
 
 # 日志
 logger = get_logger()
 # 获取配置
 api_config = config.get_api_config()
+TIME_ZONE = ZoneInfo(config.get_time_zone())
 
 # 设置关键常量
 SECRET_KEY = api_config.get("secret_key")
@@ -120,7 +122,7 @@ def generate_permanent_token(session: Session, user_id: int, provider: str) -> s
         user_id=user_id,
         token=token,
         token_type=1,  # 1 表示用户API调用的token
-        expires_at=datetime.now(UTC) + timedelta(days=365*100),  # 设置一个很长的过期时间，比如100年
+        expires_at=datetime.now(TIME_ZONE) + timedelta(days=365*1000),
         state=0  # 正常状态
     )
     session.add(new_token)
@@ -129,6 +131,9 @@ def generate_permanent_token(session: Session, user_id: int, provider: str) -> s
 
 def verify_permanent_token(session: Session, token: str) -> bool:
     stored_token = session.query(Token).filter_by(token=token, token_type=1, state=0).first()
-    if stored_token and stored_token.expires_at:
-        return stored_token.expires_at.replace(tzinfo=UTC) > datetime.now(UTC)
+    if stored_token:
+        # 确保 stored_token.expires_at 是带时区的
+        if stored_token.expires_at.tzinfo is None:
+            stored_token.expires_at = stored_token.expires_at.replace(tzinfo=TIME_ZONE)
+        return stored_token.expires_at > datetime.now(TIME_ZONE)
     return False
