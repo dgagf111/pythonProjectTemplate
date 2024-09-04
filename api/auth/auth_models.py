@@ -1,7 +1,6 @@
 from sqlalchemy import Column, BigInteger, String, DateTime, Integer
 from sqlalchemy.sql import func
 from db.mysql.mysql import MySQL_Base
-from pydantic import BaseModel
 from zoneinfo import ZoneInfo
 from config.config import config
 
@@ -76,8 +75,3 @@ class ThirdPartyToken(MySQL_Base):
     created_at = Column(DateTime, server_default=func.now())
     # 更新时间
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str
-    refresh_token: str

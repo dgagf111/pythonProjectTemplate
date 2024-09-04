@@ -3,7 +3,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from .auth.auth_service import authenticate_user, get_current_user, get_db, get_current_app
 from .auth.token_service import create_tokens, refresh_access_token, revoke_tokens, generate_permanent_token
-from .auth.auth_models import User, TokenResponse
+from api.models.token_response_model import TokenResponse
+from api.auth.auth_models import User
 from config.config import config
 from .auth.token_service import verify_token    
 from log.logHelper import get_logger
