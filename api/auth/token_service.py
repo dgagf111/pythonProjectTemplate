@@ -7,7 +7,7 @@ from cache.cache_manager import get_cache_manager
 from log.logHelper import get_logger
 from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_jwt_token, create_access_token, create_refresh_token
 from cache.cache_keys_manager import CacheKeysManager
-from .auth_models import ThirdPartyToken
+from .auth_models import ThirdPartyToken, Token
 from sqlalchemy.orm import Session
 import secrets
 
@@ -116,19 +116,19 @@ def revoke_tokens(username: str):
 
 def generate_permanent_token(session: Session, user_id: int, provider: str) -> str:
     token = secrets.token_urlsafe(32)
-    third_party_token = ThirdPartyToken(
+    new_token = Token(
         user_id=user_id,
-        provider=provider,
-        third_party_token=token,
+        token=token,
+        token_type=1,  # 1 表示用户API调用的token
         expires_at=datetime.now(UTC) + timedelta(days=365*100),  # 设置一个很长的过期时间，比如100年
         state=0  # 正常状态
     )
-    session.add(third_party_token)
+    session.add(new_token)
     session.commit()
     return token
 
 def verify_permanent_token(session: Session, token: str) -> bool:
-    third_party_token = session.query(ThirdPartyToken).filter_by(third_party_token=token, state=0).first()
-    if third_party_token and third_party_token.expires_at:
-        return third_party_token.expires_at.replace(tzinfo=UTC) > datetime.now(UTC)
+    stored_token = session.query(Token).filter_by(token=token, token_type=1, state=0).first()
+    if stored_token and stored_token.expires_at:
+        return stored_token.expires_at.replace(tzinfo=UTC) > datetime.now(UTC)
     return False

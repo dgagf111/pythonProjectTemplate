@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from api.api_router import api_router, API_PREFIX
 from api.auth.token_service import generate_permanent_token
-from api.auth.auth_models import User, ThirdPartyToken
+from api.auth.auth_models import User, ThirdPartyToken, Token
 from db.mysql.mysql import MySQL_Database
 
 app = FastAPI()
@@ -49,9 +49,9 @@ def test_generate_permanent_token(session):
     user = setup_test_user(session)
     token = generate_permanent_token(session, user.user_id, "test_provider")
     assert token is not None
-    stored_token = session.query(ThirdPartyToken).filter_by(user_id=user.user_id).first()
+    stored_token = session.query(Token).filter_by(user_id=user.user_id, token_type=1).first()
     assert stored_token is not None
-    assert stored_token.third_party_token == token  # 使用 third_party_token
+    assert stored_token.token == token
 
 def test_third_party_access_with_valid_token(session):
     user = setup_test_user(session)
@@ -77,8 +77,8 @@ def test_revoke_permanent_token(session):
     assert response.status_code == 200
     
     # 撤销token
-    third_party_token = session.query(ThirdPartyToken).filter_by(third_party_token=token).first()
-    third_party_token.state = -1  # 假设-1表示已撤销
+    stored_token = session.query(Token).filter_by(token=token, token_type=1).first()
+    stored_token.state = -1  # -1表示已删除
     session.commit()
     
     # 再次尝试使用已撤销的token
@@ -94,8 +94,8 @@ def test_permanent_token_expiration(session):
     assert response.status_code == 200
     
     # 模拟token过期
-    third_party_token = session.query(ThirdPartyToken).filter_by(third_party_token=token).first()
-    third_party_token.expires_at = datetime.now(UTC) - timedelta(days=1)
+    stored_token = session.query(Token).filter_by(token=token, token_type=1).first()
+    stored_token.expires_at = datetime.now(UTC) - timedelta(days=1)
     session.commit()
     
     # 尝试使用过期的token

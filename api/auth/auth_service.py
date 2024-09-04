@@ -21,7 +21,7 @@ api_config = config.get_api_config()
 cache_keys = CacheKeysManager()
 
 # 设置关键常量
-SECRET_KEY = api_config.get("secret_key")  # 用于JWT加密的密钥
+SECRET_KEY = api_config.get("secret_key")  # ��于JWT加密的密钥
 ALGORITHM = "HS256"  # JWT加密算法
 ACCESS_TOKEN_EXPIRE_MINUTES = eval(str(api_config.get("access_token_expire_minutes"))) # 访问令牌过期时间，单位：分钟，总时长：7天
 
@@ -129,7 +129,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
     从JWT令牌中获取当前用户，并验证token是否存在于token大map结构中。
     
     :param token: JWT令牌
-    :param session: 数据库会话
+    :param session: ���据库会话
     :return: 当前用户对象
     :raises HTTPException: 如果凭据无效或用户不存在
     """
