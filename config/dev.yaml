@@ -101,5 +101,8 @@ api:
   # 密钥
   secret_key: ${SECRET_KEY}
 
-  # 访问令牌过期时间，单位：分钟，总时长：7天
-  access_token_expire_minutes: 60 * 24 * 7 
+  # 访问令牌过期时间，单位：分钟，总时长：3天
+  access_token_expire_minutes: 60 * 24 * 3
+
+  # 刷新令牌过期时间，单位：分钟，总时长：30天
+  refresh_token_expire_days: 60 * 24 * 30

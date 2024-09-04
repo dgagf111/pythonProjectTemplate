@@ -17,7 +17,7 @@ api_config = config.get_api_config()
 SECRET_KEY = api_config.get("secret_key")
 ALGORITHM = "HS256" 
 ACCESS_TOKEN_EXPIRE_MINUTES = eval(str(api_config.get("access_token_expire_minutes")))
-REFRESH_TOKEN_EXPIRE_DAYS = 30
+REFRESH_TOKEN_EXPIRE_DAYS = eval(str(api_config.get("refresh_token_expire_days")))
 
 # 使用缓存管理器实例
 cache_manager = get_cache_manager()
