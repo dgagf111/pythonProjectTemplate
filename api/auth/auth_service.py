@@ -1,6 +1,6 @@
 import os
 from fastapi import Depends, HTTPException, status, Header
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, UTC
@@ -168,3 +168,21 @@ def save_token(session: Session, user_id: int, token: str, token_type: int, expi
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
+
+# 新增函数：验证永久token
+from .token_service import verify_permanent_token
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+async def get_current_app(api_key: str = Depends(api_key_header), session: Session = Depends(get_db)):
+    if not api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key is missing",
+        )
+    if not verify_permanent_token(session, api_key):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+        )
+    return api_key

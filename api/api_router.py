@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from .auth.auth_service import authenticate_user, get_current_user, get_db
-from .auth.token_service import create_tokens, refresh_access_token, revoke_tokens
+from .auth.auth_service import authenticate_user, get_current_user, get_db, get_current_app
+from .auth.token_service import create_tokens, refresh_access_token, revoke_tokens, generate_permanent_token
 from .auth.auth_models import User, Token, TokenResponse
 from config.config import config
 from .auth.token_service import verify_token    
@@ -54,7 +54,6 @@ async def logout(current_user: User = Depends(get_current_user)):
 
 @api_router.get("/test")
 async def test_route(current_user: User = Depends(get_current_user)):
-    print("API_VERSION:", API_VERSION)
     return {"message": "Test route", "version": API_VERSION, "user": current_user.username}
 
 @api_router.post("/login")
@@ -64,3 +63,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     access_token, refresh_token = create_tokens(user.username)
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+
+@api_router.post("/generate_permanent_token")
+async def generate_token(user_id: int, provider: str, session: Session = Depends(get_db)):
+    token = generate_permanent_token(session, user_id, provider)
+    return {"permanent_token": token}
+
+@api_router.get("/third_party_test")
+async def third_party_test(current_app: str = Depends(get_current_app)):
+    return {"message": "Third party access successful", "app": current_app}

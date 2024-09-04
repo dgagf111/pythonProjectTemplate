@@ -8,7 +8,7 @@ from api.auth.token_service import create_tokens, refresh_access_token, revoke_t
 from api.auth.auth_service import SECRET_KEY, ALGORITHM, get_password_hash
 from api.api_router import api_router,API_PREFIX
 from db.mysql.mysql import MySQL_Database
-from api.auth.auth_models import User
+from api.auth.auth_models import User, ThirdPartyToken
 
 app = FastAPI()
 app.include_router(api_router)
@@ -34,16 +34,21 @@ def clean_test_data(session):
     session.query(User).filter_by(username="testuser").delete()
     session.commit()
 
+@pytest.fixture(autouse=True)
+def clean_test_user(session):
+    session.query(User).filter_by(username="testuser").delete()
+    session.query(ThirdPartyToken).delete()
+    session.commit()
+
 def setup_test_user(session):
-    from api.auth.auth_service import get_password_hash
     existing_user = session.query(User).filter_by(username="testuser").first()
     if existing_user:
         return existing_user
     hashed_password = get_password_hash("testpassword")
-    test_user = User(username="testuser", password_hash=hashed_password, email="test@example.com")
-    session.add(test_user)
+    user = User(username="testuser", password_hash=hashed_password, email="test@example.com")
+    session.add(user)
     session.commit()
-    return test_user
+    return user
 
 def test_create_tokens(session):
     user = setup_test_user(session)
@@ -85,8 +90,6 @@ def test_revoke_tokens(session):
     
     # 尝试使用已撤销的令牌
     response = client.get(f"{expected_prefix}/test", headers={"Authorization": f"Bearer {access_token}"})
-    print(f"Response status: {response.status_code}")
-    print(f"Response content: {response.content}")
     assert response.status_code == 401, f"Expected 401, got {response.status_code}. Response: {response.json()}"
 
 def test_verify_token(session):
