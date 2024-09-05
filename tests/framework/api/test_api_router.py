@@ -9,6 +9,7 @@ from db.mysql.mysql import MySQL_Database
 from api.models.auth_models import User
 from jose import jwt
 from api.exception.custom_exceptions import InvalidCredentialsException, InvalidTokenException, TokenRevokedException, UserNotFoundException
+from api.models.result_vo import ResultVO
 
 # 创建一个测试用的 FastAPI 应用
 app = FastAPI()
@@ -68,17 +69,20 @@ expected_prefix = API_PREFIX
 
 def test_api_version_and_prefix():
     api_config = config.get_api_config()
-    expected_version = api_config.get('api_version', 'v1')  # 使用默认值 'v1'
+    expected_version = api_config.get('api_version', 'v1')
     expected_prefix = f"/api/{expected_version}"
 
     token = get_test_token()
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.get(f"{expected_prefix}/test", headers=headers)
+    result = ResultVO(**response.json())
     assert response.status_code == 200, f"Expected 200, got {response.status_code}. Response: {response.json()}"
-    assert response.json()["message"] == "Test route"
-    assert response.json()["version"] == expected_version
-    assert response.json()["user"] == "testuser"
+    assert result.code == 200
+    assert result.message == "success"
+    assert result.data["message"] == "Test route"
+    assert result.data["version"] == expected_version
+    assert result.data["user"] == "testuser"
 
 def test_authentication():
     api_config = config.get_api_config()
@@ -89,8 +93,9 @@ def test_authentication():
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.get(f"{expected_prefix}/test", headers=headers)
+    data = response.json()["data"]
     assert response.status_code == 200, f"Expected 200, got {response.status_code}. Response: {response.json()}"
-    assert response.json()["user"] == "testuser"
+    assert data["user"] == "testuser"
 
 def test_create_access_token():
     username = "testuser"
@@ -124,8 +129,16 @@ def test_login_process():
         setup_test_user(session)  # 确保测试用户存在
         response = client.post(f"{expected_prefix}/token", data={"username": "testuser", "password": "testpassword"})
         assert response.status_code == 200, f"Expected 200, got {response.status_code}. Response: {response.json()}"
-        assert "access_token" in response.json()
-        assert response.json()["token_type"] == "bearer"
+        
+        result = response.json()
+        assert result["code"] == 200
+        assert result["message"] == "success"
+        
+        data = result["data"]
+        assert "access_token" in data
+        assert "token_type" in data
+        assert "refresh_token" in data
+        assert data["token_type"] == "bearer"
     finally:
         session.close()
 
@@ -135,21 +148,25 @@ def test_get_current_user(session):
     access_token, _ = create_tokens(user.username)
     headers = {"Authorization": f"Bearer {access_token}"}
     response = client.get(f"{expected_prefix}/test", headers=headers)
+    data = response.json()['data']
     assert response.status_code == 200
-    assert response.json()["user"] == "testuser"
+    assert data["user"] == "testuser"
 
 # 添加以下测试函数
 
 def test_invalid_credentials():
     response = client.post(f"{expected_prefix}/token", data={"username": "wronguser", "password": "wrongpassword"})
-    assert response.status_code == 401
-    assert response.json() == {"detail": "Incorrect username or password"}
+    print("response11", response)
+    print("response11.json()", response.json())
+    assert response.json()["code"] == 401
+    assert response.json()['message'] == "Incorrect username or password"
 
 def test_invalid_token_exception():
     invalid_token = "invalid_token"
     headers = {"Authorization": f"Bearer {invalid_token}"}
     response = client.get(f"{expected_prefix}/test", headers=headers)
     assert response.status_code == 401
+    print(response.json())
     assert response.json() == {"detail": "Invalid token"}
 
 def test_token_revoked_exception(session):

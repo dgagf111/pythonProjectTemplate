@@ -132,7 +132,7 @@ def test_logout():
         setup_test_user(session)
         response = client.post(f"{expected_prefix}/token", data={"username": "testuser", "password": "testpassword"})
         assert response.status_code == 200, f"Expected 200, got {response.status_code}. Response: {response.json()}"
-        tokens = response.json()
+        tokens = response.json()["data"]
 
         headers = {"Authorization": f"Bearer {tokens['access_token']}"}
         response = client.post(f"{expected_prefix}/logout", headers=headers)
