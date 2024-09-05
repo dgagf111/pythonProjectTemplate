@@ -36,7 +36,6 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), ses
 async def refresh_token(refresh_token: str = Body(..., embed=True)):
     try:
         payload = verify_token(refresh_token)
-        username = payload.get("sub")
         if payload.get("type") != "refresh":
             raise InvalidTokenException(detail="Invalid token type")
         new_access_token, new_refresh_token = refresh_access_token(refresh_token)
