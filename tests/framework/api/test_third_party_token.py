@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import Session
 from api.api_router import api_router, API_PREFIX
 from api.auth.token_service import generate_permanent_token
-from api.auth.auth_models import User, ThirdPartyToken, Token
+from api.models.auth_models import User, ThirdPartyToken, Token
 from db.mysql.mysql import MySQL_Database
 
 app = FastAPI()

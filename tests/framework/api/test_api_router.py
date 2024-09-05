@@ -6,7 +6,7 @@ from config.config import config
 from api.auth.auth_service import create_access_token, create_user, ALGORITHM, SECRET_KEY, get_current_user, get_password_hash
 from datetime import timedelta
 from db.mysql.mysql import MySQL_Database
-from api.auth.auth_models import User
+from api.models.auth_models import User
 from jose import jwt
 from api.exception.custom_exceptions import InvalidCredentialsException, InvalidTokenException, TokenRevokedException, UserNotFoundException
 

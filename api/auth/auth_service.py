@@ -9,7 +9,7 @@ from api.auth.token_service import create_tokens, verify_token
 from cache.cache_manager import get_cache_manager
 from config.config import config
 from db.mysql.mysql import MySQL_Database
-from .auth_models import User, Token
+from ..models.auth_models import User, Token
 from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from sqlalchemy.orm import Session
 from cache.cache_keys_manager import CacheKeysManager

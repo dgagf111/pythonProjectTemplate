@@ -6,7 +6,7 @@ from cache.cache_manager import get_cache_manager
 from log.logHelper import get_logger
 from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_jwt_token, create_access_token, create_refresh_token
 from cache.cache_keys_manager import CacheKeysManager
-from .auth_models import Token
+from ..models.auth_models import Token
 from sqlalchemy.orm import Session
 import secrets
 from zoneinfo import ZoneInfo
