@@ -8,7 +8,7 @@ from api.models.auth_models import User
 from config.config import config
 from .auth.token_service import verify_token    
 from log.logHelper import get_logger
-from api.exception.custom_exceptions import IncorrectCredentialsException, InvalidCredentialsException, InvalidTokenException
+from api.exception.custom_exceptions import APIException, IncorrectCredentialsException, InvalidCredentialsException, InvalidTokenException
 from api.models.result_vo import ResultVO
 from api.http_status import HTTPStatus
 
@@ -88,3 +88,7 @@ async def third_party_test(current_app: str = Depends(get_current_app)):
     except Exception as e:
         logger.error(f"Error testing third party access: {str(e)}")
         return ResultVO.error(code=HTTPStatus.INTERNAL_SERVER_ERROR.code, message="Failed to test third party access")
+
+@api_router.get("/test_exception")
+async def test_exception_route():
+    raise APIException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR.code, detail="测试异常")

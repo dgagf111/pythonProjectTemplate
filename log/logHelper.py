@@ -3,6 +3,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
+import traceback
 
 # 添加项目根目录到 Python 路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -127,11 +128,50 @@ class LogHelper:
         
         self.logger.addHandler(file_handler)
 
-    def debug(self, message): self.logger.debug(message)
-    def info(self, message): self.logger.info(message)
-    def warning(self, message): self.logger.warning(message)
-    def error(self, message): self.logger.error(message)
-    def critical(self, message): self.logger.critical(message)
+    def debug(self, message, *args, **kwargs):
+        exc_info = kwargs.pop('exc_info', None)
+        if exc_info:
+            if isinstance(exc_info, BaseException):
+                message += f"\n{traceback.format_exc()}"
+            elif exc_info is True:
+                message += f"\n{traceback.format_exc()}"
+        self.logger.debug(message, *args, **kwargs)
+
+    def info(self, message, *args, **kwargs):
+        exc_info = kwargs.pop('exc_info', None)
+        if exc_info:
+            if isinstance(exc_info, BaseException):
+                message += f"\n{traceback.format_exc()}"
+            elif exc_info is True:
+                message += f"\n{traceback.format_exc()}"
+        self.logger.info(message, *args, **kwargs)
+
+    def warning(self, message, *args, **kwargs):
+        exc_info = kwargs.pop('exc_info', None)
+        if exc_info:
+            if isinstance(exc_info, BaseException):
+                message += f"\n{traceback.format_exc()}"
+            elif exc_info is True:
+                message += f"\n{traceback.format_exc()}"
+        self.logger.warning(message, *args, **kwargs)
+
+    def error(self, message, *args, **kwargs):
+        exc_info = kwargs.pop('exc_info', None)
+        if exc_info:
+            if isinstance(exc_info, BaseException):
+                message += f"\n{traceback.format_exc()}"
+            elif exc_info is True:
+                message += f"\n{traceback.format_exc()}"
+        self.logger.error(message, *args, **kwargs)
+
+    def critical(self, message, *args, **kwargs):
+        exc_info = kwargs.pop('exc_info', None)
+        if exc_info:
+            if isinstance(exc_info, BaseException):
+                message += f"\n{traceback.format_exc()}"
+            elif exc_info is True:
+                message += f"\n{traceback.format_exc()}"
+        self.logger.critical(message, *args, **kwargs)
 
 def get_logger():
     """
@@ -173,6 +213,17 @@ if __name__ == '__main__':
     for level, message in test_messages.items():
         getattr(logger, level)(message)
 
+    # 测试带异常信息的日志
+    try:
+        raise ValueError("测试异常")
+    except ValueError as e:
+        logger.error("发生了一个错误", exc_info=e)
+        logger.critical("发生了一个严重错误", exc_info=True)
+
+    # 测试带额外参数的日志
+    extra_data = {"user": "测试用户", "action": "登录"}
+    logger.info("用户操作", extra=extra_data)
+
     # 检查日志文件内容
     with open(expected_log_path, 'r', encoding='utf-8') as log_file:
         content = log_file.read()
@@ -181,6 +232,16 @@ if __name__ == '__main__':
                 print(f"测试通过：日志消息 '{message}' 已成功记录")
             else:
                 print(f"测试失败：日志消息 '{message}' 未在日志文件中找到")
+        
+        if "ValueError: 测试异常" in content and "Traceback (most recent call last):" in content:
+            print("测试通过：异常信息已成功记录")
+        else:
+            print("测试失败：异常信息未在日志文件中找到")
+        
+        if "用户操作" in content and "测试用户" in content and "登录" in content:
+            print("测试通过：带额外参数的日志已成功记录")
+        else:
+            print("测试失败：带额外参数的日志未在日志文件中找到")
 
     # 测试单例模式
     logger1 = get_logger()

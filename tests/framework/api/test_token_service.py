@@ -9,8 +9,8 @@ from api.auth.auth_service import SECRET_KEY, ALGORITHM, get_password_hash
 from api.api_router import api_router,API_PREFIX
 from db.mysql.mysql import MySQL_Database
 from api.models.auth_models import User, ThirdPartyToken
+from main import app
 
-app = FastAPI()
 app.include_router(api_router)
 
 client = TestClient(app)

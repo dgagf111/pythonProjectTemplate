@@ -7,10 +7,12 @@ from monitoring.main import monitoring_center
 import os
 import asyncio
 import threading
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from api.api_router import api_router
 from api.exception.custom_exceptions import APIException
 from fastapi.responses import JSONResponse
+from api.http_status import HTTPStatus
+from api.models.result_vo import ResultVO
 
 """
 全局日志实例使用说明：
@@ -40,7 +42,7 @@ from fastapi.responses import JSONResponse
 
 6. 注意事项：
    - 避免在日志消息中包含敏感信息（如密码、个人身份信息等）
-   - 对于大量重复的日志，考虑使用更低的日志级别或减少日志
+   - 对于大量重复的日志，考虑使用��低的日志级别或减少日志
    - 在处理异常时，推荐使用 logger.exception()，它会自动包含堆栈跟踪信息
 """
 
@@ -108,8 +110,24 @@ def main():
     finally:
         asyncio.run(graceful_shutdown())
 
+app = FastAPI()
+
+# 全局异常处理
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, e: Exception):
+    logger.error(f"捕获到全局异常: {e}", exc_info=True)
+    return ResultVO.error(
+        code=HTTPStatus.INTERNAL_SERVER_ERROR.code,
+        message=e.detail
+    )
+
+# 包含 API 路由器
+app.include_router(api_router)
+
+# 其他应用设置...
 if __name__ == "__main__":
     import sys
+    import uvicorn
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         # 如果传入 "test" 参数，只运行测试
         import subprocess
@@ -118,23 +136,5 @@ if __name__ == "__main__":
         # 否则，正常启动应用
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
+        uvicorn.run(app, host="0.0.0.0", port=8000)
         main()
-
-app = FastAPI()
-
-# 包含 API 路由器
-app.include_router(api_router)
-
-# 全局异常处理
-@app.exception_handler(APIException)
-async def api_exception_handler(request, exc):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail}
-    )
-
-# 其他应用设置...
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)

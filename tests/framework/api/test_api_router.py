@@ -10,9 +10,8 @@ from api.models.auth_models import User
 from jose import jwt
 from api.exception.custom_exceptions import InvalidCredentialsException, InvalidTokenException, TokenRevokedException, UserNotFoundException
 from api.models.result_vo import ResultVO
+from main import app
 
-# 创建一个测试用的 FastAPI 应用
-app = FastAPI()
 app.include_router(api_router)
 
 client = TestClient(app)
@@ -192,3 +191,24 @@ def test_user_not_found_exception(session):
     response = client.get(f"{expected_prefix}/test", headers=headers)
     assert response.status_code == 404
     assert response.json() == {"detail": "User not found"}
+
+def test_exception_handling():
+    api_config = config.get_api_config()
+    expected_version = api_config.get('api_version', 'v1')
+    expected_prefix = f"/api/{expected_version}"
+
+    response = client.get(f"{expected_prefix}/test_exception")
+    print("Response status code:", response.status_code)
+    print("Response content:", response.content)
+    
+    assert response.status_code == 500
+    
+    try:
+        result = response.json()
+        print("Response JSON:", result)
+    except Exception as e:
+        print("Failed to parse response as JSON:", str(e))
+        raise
+    
+    assert "detail" in result, "Response should contain 'detail' key"
+    assert result["detail"] == "测试异常", f"Expected message '测试异常', got {result.get('detail')}"
