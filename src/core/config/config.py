@@ -56,9 +56,9 @@ class Config:
     def _load_config(self):
         load_dotenv()  # 加载 .env 文件中的环境变量
         
-        # 获取项目根目录（从src/pythonprojecttemplate/core/config目录向上5级到项目根目录）
+        # 获取项目根目录（从rc/core/config目录向上3级到项目根目录）
         current_file_path = os.path.abspath(__file__)
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file_path)))))
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file_path))))
         
         # 加载环境配置文件（env.yaml）
         self._env_config = self._load_yaml_file(os.path.join(project_root, 'env.yaml'))

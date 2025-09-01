@@ -1,9 +1,10 @@
 """
-pythonProjectTemplate - 统一的Python应用程序框架
+pythonProjectTemplate 主包
 
-提供环境配置、数据库连接、日志记录、API服务、缓存系统、
-任务调度和监控等功能的全面框架。
+包含核心功能模块、API服务、业务逻辑等。
 """
 
-__version__ = "1.0.0"
-__author__ = "pythonProjectTemplate Team"
+from .core import config, get_logger
+from .api import create_app
+
+__all__ = ["config", "get_logger", "create_app"]
