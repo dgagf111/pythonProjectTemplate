@@ -27,6 +27,10 @@ class MemoryCacheManager(BaseCacheManager):
     def delete(self, key):
         self.cache.pop(key, None)
 
+    def exists(self, key):
+        """检查键是否存在"""
+        return self.get(key) is not None
+
     def clear(self):
         self.cache.clear()
 

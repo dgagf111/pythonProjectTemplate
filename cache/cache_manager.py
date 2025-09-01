@@ -124,13 +124,21 @@ def get_cache_manager():
     cache_type = cache_config.get('type', 'memory')
     
     if cache_type == 'redis':
-        from .redis_cache import RedisCacheManager
-        redis_config = cache_config.get('redis', {})
-        host = redis_config.get('host', 'localhost')
-        port = redis_config.get('port', 6379)
-        db = redis_config.get('db', 0)
-        ttl = cache_config.get('ttl', 3600)
-        return RedisCacheManager(host=host, port=port, db=db, ttl=ttl)
+        try:
+            from .redis_cache import RedisCacheManager
+            redis_config = cache_config.get('redis', {})
+            host = redis_config.get('host', 'localhost')
+            port = redis_config.get('port', 6379)
+            db = redis_config.get('db', 0)
+            ttl = cache_config.get('ttl', 3600)
+            return RedisCacheManager(host=host, port=port, db=db, ttl=ttl)
+        except Exception as e:
+            # Redis 连接失败，降级到内存缓存
+            print(f"Warning: Redis connection failed ({e}), falling back to memory cache")
+            from .memory_cache import MemoryCacheManager
+            max_size = cache_config.get('max_size', 1000)
+            ttl = cache_config.get('ttl', 3600)
+            return MemoryCacheManager(max_size=max_size, ttl=ttl)
     else:
         from .memory_cache import MemoryCacheManager
         max_size = cache_config.get('max_size', 1000)

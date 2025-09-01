@@ -84,9 +84,13 @@ class Config:
         parsed_config = {}
         for k, v in mysql_config.items():
             if k == 'port':
-                parsed_config[k] = int(v)
+                # 安全地解析端口
+                try:
+                    parsed_config[k] = int(v) if v and str(v).strip() else 3306
+                except (ValueError, TypeError):
+                    parsed_config[k] = 3306
             else:
-                parsed_config[k] = v
+                parsed_config[k] = v if v else ''
         return parsed_config
 
     def get_log_config(self) -> Dict[str, Any]:
@@ -129,7 +133,14 @@ class Config:
         if cache_config.get('type') == 'redis':
             redis_config = cache_config.get('redis', {})
             redis_config['host'] = self._parse_value(redis_config.get('host', 'localhost'))
-            redis_config['port'] = int(self._parse_value(redis_config.get('port', '6379')))
+            
+            # 安全解析Redis端口
+            port_value = self._parse_value(redis_config.get('port', '6379'))
+            try:
+                redis_config['port'] = int(port_value) if port_value else 6379
+            except (ValueError, TypeError):
+                redis_config['port'] = 6379
+            
             redis_config['db'] = int(redis_config.get('db', 0))
             cache_config['redis'] = redis_config
         return cache_config
@@ -140,10 +151,30 @@ class Config:
 
     def get_api_config(self) -> Dict[str, Any]:
         """获取API服务器配置"""
-        return self._config.get('api', {})
+        api_config = self._config.get('api', {})
+        # 如果api_version不存在或为空，从公共配置获取
+        if not api_config.get('api_version'):
+            api_config['api_version'] = self.get_api_version()
+        return api_config
 
     def get_time_zone(self):
-        return self._env_config.get('TIME_ZONE')
+        """获取时区配置，返回有效的时区字符串"""
+        # 从 env.yaml 的 common 节点获取时区配置
+        common_config = self._env_config.get('common', {})
+        time_zone = common_config.get('time_zone')
+        # 如果时区为空或无效，返回默认值
+        if not time_zone or time_zone.strip() == '':
+            return 'Asia/Shanghai'  # 默认使用中国时区
+        return time_zone.strip()
+    
+    def get_common_config(self) -> Dict[str, Any]:
+        """获取公共配置（非敏感参数）"""
+        return self._env_config.get('common', {})
+    
+    def get_api_version(self) -> str:
+        """获取API版本（从公共配置）"""
+        common_config = self.get_common_config()
+        return common_config.get('api_version', 'v1')
 
 # 全局配置实例
 config = Config()

@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from db.mysql.mysql import MySQL_Database
 from tests.framework.db.mysql.test_table import Test_Table
 from db.mysql.transaction.transaction_manager import TransactionManager
@@ -10,9 +11,13 @@ logger = get_logger()
 
 @pytest.fixture(scope="module")
 def db_connection():
-    db = MySQL_Database()
-    yield db
-    db.close_session()
+    try:
+        db = MySQL_Database()
+        yield db
+        db.close_session()
+    except OperationalError as e:
+        logger.warning(f"数据库连接失败，跳过数据库测试: {e}")
+        pytest.skip(f"数据库连接失败: {e}")
 
 @pytest.fixture
 def session(db_connection):

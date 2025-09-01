@@ -1,4 +1,5 @@
-# mysql连接参数
+# 生产环境配置文件
+# mysql连接参数（生产环境）
 mysql:
   username: ${MYSQL_USERNAME}
   password: ${MYSQL_PASSWORD}
@@ -44,9 +45,9 @@ tasks:
     retry_delay: 5
 # 如果任务在所有重试后仍然失败，它将被标记为失败，并等待下一次调度
 
-# 缓存配置
+# 缓存配置（生产环境）
 cache:
-  type: redis  # 缓存类型，可选值: memory（内存缓存）或 redis（Redis缓存）
+  type: redis  # 生产环境优先使用Redis缓存
   ttl: 3600  # 默认缓存时间（秒），设置缓存项的生存时间
   max_size: 1000  # 最大缓存项数，仅适用于内存缓存，用于限制内存使用
   redis:
@@ -54,55 +55,53 @@ cache:
     port: ${REDIS_PORT}
     db: 0  # Redis数据库索引，用于选择特定的数据库
 
-# 监控配置
+# 监控配置（生产环境）
 monitoring:
   prometheus_port: 9966  # Prometheus监控服务的端口号，用于暴露监控指标
-  cpu_threshold: 80  # CPU使用率阈值（百分比），超过此值将触发警告
-  memory_threshold: 80  # 内存使用率阈值（百分比），超过此值将触发警告
+  cpu_threshold: 70  # CPU使用率阈值（百分比），生产环境设置更低的阈值
+  memory_threshold: 70  # 内存使用率阈值（百分比），生产环境设置更低的阈值
 
-# API服务器配置
+# API服务器配置（生产环境）
 api:
   # 服务器监听的IP地址
   # "0.0.0.0" 表示监听所有可用的网络接口
   host: "0.0.0.0"
   
   # 服务器监听的端口号
-  # 8000 是常用的开发端口,生产环境可能需要使用其他端口
+  # 生产环境可能使用不同的端口
   port: 8000
   
   # 事件循环类型
-  # "asyncio" 是Python的标准异步IO库,适用于大多数情况
-  # 其他选项可能包括 "uvloop" (更快的事件循环实现)
-  loop: "asyncio"
+  # "uvloop" 在生产环境中提供更好的性能
+  loop: "uvloop"
   
-  # 是否在启动时打开API文档
-  # true 表示启动服务器时自动打开Swagger UI文档
+  # 生产环境不自动打开API文档
   open_api_on_startup: false
   
   # API文档的URL路径
-  # "/docs" 是FastAPI的默认Swagger UI路径
-  docs_url: "/docs"
+  # 生产环境可能禁用文档或设置为 null
+  docs_url: null  # 生产环境禁用文档
   
   # 允许跨域请求的源
-  # "*" 表示允许所有源,生产环境应该指定具体的域名
-  cors_origins: ["*"]
+  # 生产环境应该指定具体的域名，而不是"*"
+  cors_origins: ["https://your-domain.com", "https://api.your-domain.com"]
   
   # 最大并发请求数
-  # 控制服务器同时处理的最大请求数,有助于防止过载
-  max_concurrency: 100
+  # 生产环境可能需要更高的并发数
+  max_concurrency: 500
   
   # 请求超时时间(秒)
-  # 如果请求处理时间超过此值,将返回超时错误
-  request_timeout: 30
+  # 生产环境可能需要更短的超时时间
+  request_timeout: 15
+  
+  # API版本（从公共配置获取）
+  api_version: v1
 
-  # API版本
-  api_version: ${API_VERSION}
-
-    # 密钥
+  # 生产环境密钥（从环境变量获取）
   secret_key: ${SECRET_KEY}
 
-  # 访问令牌过期时间，单位：分钟，总时长：3小时
-  access_token_expire_minutes: 60 * 3
+  # 访问令牌过期时间，生产环境可能需要更短的过期时间
+  access_token_expire_minutes: 30  # 30分钟
 
-  # 刷新令牌过期时间，单位：分钟，总时长：7天
-  refresh_token_expire_days: 60 * 24 * 7
+  # 刷新令牌过期时间，生产环境也可能需要更短的过期时间
+  refresh_token_expire_days: 60 * 24 * 3  # 3天

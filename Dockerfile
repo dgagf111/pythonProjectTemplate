@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # 安装项目依赖
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r dependencies/requirements.txt
 
 # python 不缓存输出
 ENV PYTHONUNBUFFERED=1

@@ -11,6 +11,7 @@ from jose import jwt
 from api.exception.custom_exceptions import InvalidCredentialsException, InvalidTokenException, TokenRevokedException, UserNotFoundException
 from api.models.result_vo import ResultVO
 from main import app
+from sqlalchemy.exc import OperationalError
 
 app.include_router(api_router)
 
@@ -20,6 +21,23 @@ import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from config.config import config
+
+# 检查数据库连接是否可用
+def check_database_connection():
+    try:
+        db = MySQL_Database()
+        session = db.get_session()
+        session.execute("SELECT 1")
+        session.close()
+        return True
+    except OperationalError:
+        return False
+
+# 如果数据库不可用，跳过所有测试
+pytestmark = pytest.mark.skipif(
+    not check_database_connection(),
+    reason="数据库连接不可用，跳过API测试"
+)
 
 @pytest.fixture(autouse=True)
 def clean_test_user():

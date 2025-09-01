@@ -63,6 +63,10 @@ class RedisCacheManager(BaseCacheManager):
     def delete(self, key):
         self.redis.delete(key)
 
+    def exists(self, key):
+        """检查键是否存在"""
+        return self.redis.exists(key) > 0
+
     def clear(self):
         self.redis.flushdb()
 

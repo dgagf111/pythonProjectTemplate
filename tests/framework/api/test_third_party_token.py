@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from config.config import config
 from zoneinfo import ZoneInfo
+from sqlalchemy.exc import OperationalError
 
 TIME_ZONE = ZoneInfo(config.get_time_zone())
 import pytest
@@ -16,6 +17,23 @@ from main import app
 app.include_router(api_router)
 
 client = TestClient(app)
+
+# 检查数据库连接是否可用
+def check_database_connection():
+    try:
+        db = MySQL_Database()
+        session = db.get_session()
+        session.execute("SELECT 1")
+        session.close()
+        return True
+    except OperationalError:
+        return False
+
+# 如果数据库不可用，跳过所有测试
+pytestmark = pytest.mark.skipif(
+    not check_database_connection(),
+    reason="数据库连接不可用，跳过第三方令牌测试"
+)
 
 @pytest.fixture(scope="module")
 def db():

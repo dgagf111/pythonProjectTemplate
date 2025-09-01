@@ -15,7 +15,8 @@ from api.http_status import HTTPStatus
 logger = get_logger()
 
 api_config = config.get_api_config()
-API_VERSION = api_config.get('api_version')
+# 从配置中获取API版本，如果为空则使用默认值
+API_VERSION = config.get_api_version()
 API_PREFIX = f"/api/{API_VERSION}"
 
 api_router = APIRouter(prefix=API_PREFIX)

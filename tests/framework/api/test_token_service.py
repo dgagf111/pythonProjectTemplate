@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI, HTTPException
 from datetime import timedelta
 from jose import jwt
+from sqlalchemy.exc import OperationalError
 from api.auth.token_service import create_tokens, refresh_access_token, revoke_tokens, verify_token
 from api.auth.auth_service import SECRET_KEY, ALGORITHM, get_password_hash
 from api.api_router import api_router,API_PREFIX
@@ -14,6 +15,23 @@ from main import app
 app.include_router(api_router)
 
 client = TestClient(app)
+
+# 检查数据库连接是否可用
+def check_database_connection():
+    try:
+        db = MySQL_Database()
+        session = db.get_session()
+        session.execute("SELECT 1")
+        session.close()
+        return True
+    except OperationalError:
+        return False
+
+# 如果数据库不可用，跳过所有测试
+pytestmark = pytest.mark.skipif(
+    not check_database_connection(),
+    reason="数据库连接不可用，跳过令牌服务测试"
+)
 
 expected_prefix = API_PREFIX
 

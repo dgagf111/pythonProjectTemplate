@@ -1,10 +1,11 @@
-# mysql连接参数
+# 开发环境配置文件
+# mysql连接参数（开发环境）
 mysql:
-  username: ${MYSQL_USERNAME}
-  password: ${MYSQL_PASSWORD}
-  host: ${MYSQL_HOST}
-  port: ${MYSQL_PORT}
-  database: ${MYSQL_DATABASE}
+  username: your_username
+  password: your_password
+  host: localhost
+  port: 3306
+  database: your_database
 
 # 定时器任务配置
 tasks:
@@ -44,14 +45,14 @@ tasks:
     retry_delay: 5
 # 如果任务在所有重试后仍然失败，它将被标记为失败，并等待下一次调度
 
-# 缓存配置
+# 缓存配置（开发环境）
 cache:
-  type: redis  # 缓存类型，可选值: memory（内存缓存）或 redis（Redis缓存）
+  type: memory  # 开发环境使用内存缓存，无需Redis
   ttl: 3600  # 默认缓存时间（秒），设置缓存项的生存时间
   max_size: 1000  # 最大缓存项数，仅适用于内存缓存，用于限制内存使用
   redis:
-    host: ${REDIS_HOST}
-    port: ${REDIS_PORT}
+    host: localhost
+    port: 6379
     db: 0  # Redis数据库索引，用于选择特定的数据库
 
 # 监控配置
@@ -60,7 +61,7 @@ monitoring:
   cpu_threshold: 80  # CPU使用率阈值（百分比），超过此值将触发警告
   memory_threshold: 80  # 内存使用率阈值（百分比），超过此值将触发警告
 
-# API服务器配置
+# API服务器配置（开发环境）
 api:
   # 服务器监听的IP地址
   # "0.0.0.0" 表示监听所有可用的网络接口
@@ -77,7 +78,7 @@ api:
   
   # 是否在启动时打开API文档
   # true 表示启动服务器时自动打开Swagger UI文档
-  open_api_on_startup: false
+  open_api_on_startup: true  # 开发环境自动打开文档
   
   # API文档的URL路径
   # "/docs" 是FastAPI的默认Swagger UI路径
@@ -95,11 +96,11 @@ api:
   # 如果请求处理时间超过此值,将返回超时错误
   request_timeout: 30
   
-  # API版本
-  api_version: ${API_VERSION}
+  # API版本（从公共配置获取）
+  api_version: v1
 
-  # 密钥
-  secret_key: ${SECRET_KEY}
+  # 开发环境密钥（仅用于开发）
+  secret_key: your-secret-key-for-development
 
   # 访问令牌过期时间，单位：分钟，总时长：3小时
   access_token_expire_minutes: 60 * 3
