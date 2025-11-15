@@ -10,8 +10,9 @@ from pythonprojecttemplate.api.models.auth_models import User
 from jose import jwt
 from pythonprojecttemplate.api.exception.custom_exceptions import InvalidCredentialsException, InvalidTokenException, TokenRevokedException, UserNotFoundException
 from pythonprojecttemplate.api.models.result_vo import ResultVO
-from main import app
+from pythonprojecttemplate.api.main import app
 from sqlalchemy.exc import OperationalError
+from sqlalchemy import text
 
 app.include_router(api_router)
 
@@ -27,7 +28,7 @@ def check_database_connection():
     try:
         db = MySQL_Database()
         session = db.get_session()
-        session.execute("SELECT 1")
+        session.execute(text("SELECT 1"))
         session.close()
         return True
     except OperationalError:

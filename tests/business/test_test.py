@@ -7,24 +7,14 @@
 import pytest
 from pythonprojecttemplate.modules.test.main import run
 
-def test_run_function():
+def test_run_function(caplog):
     """测试 test 模块的 run 函数"""
-    # 由于 run 函数只是打印一条消息，我们可以捕获它的输出并验证
-    import io
-    import sys
-
-    # 重定向标准输出
-    captured_output = io.StringIO()
-    sys.stdout = captured_output
-
-    # 运行函数
+    # 由于 run 函数记录日志，我们可以捕获日志并验证
     run()
 
-    # 恢复标准输出
-    sys.stdout = sys.__stdout__
-
-    # 验证输出
-    assert captured_output.getvalue().strip() == "test module is running..."
+    # 验证日志输出
+    assert "测试业务逻辑运行" in caplog.text
+    assert "INFO" in caplog.text
 
 def test_example():
     """一个简单的示例测试"""

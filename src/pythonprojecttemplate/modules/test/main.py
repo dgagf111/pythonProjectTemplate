@@ -18,3 +18,10 @@ class TestModule:
 
 def get_module() -> BaseModule:
     return TestModule()
+
+
+def run():
+    """运行测试业务逻辑"""
+    logger.info("测试业务逻辑运行")
+    return {"status": "success"}
+

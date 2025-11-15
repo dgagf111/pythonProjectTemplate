@@ -10,8 +10,39 @@ class Config:
     Backwards compatible facade around the new AppSettings object.
     """
 
+    _instance: Config | None = None
+
+    def __new__(cls, app_settings: AppSettings | None = None):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
     def __init__(self, app_settings: AppSettings | None = None):
-        self._settings = app_settings or runtime_settings
+        if app_settings is not None:
+            self._set_settings(app_settings)
+            return
+
+        if getattr(self, "_initialized", False):
+            return
+
+        self._set_settings(runtime_settings)
+
+    def _set_settings(self, app_settings: AppSettings) -> None:
+        self._settings = app_settings
+        self._initialized = True
+
+    def reload(self, app_settings: AppSettings | None = None) -> None:
+        """
+        Reload configuration, optionally using a caller-provided AppSettings object.
+        """
+        self._set_settings(app_settings or AppSettings())
+
+    def _load_config(self, app_settings: AppSettings | None = None) -> None:
+        """
+        Backwards-compatible alias used by older tests/docs.
+        """
+        self.reload(app_settings)
 
     def get_env_config(self) -> Dict[str, Any]:
         return self._settings.model_dump(by_alias=True)

@@ -20,6 +20,7 @@ config.ini
 .vscode/
 .idea/
 .cursorignore
+.claude/
 
 # 系统文件
 .DS_Store  # macOS

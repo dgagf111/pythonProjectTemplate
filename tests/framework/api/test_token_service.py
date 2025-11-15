@@ -5,12 +5,13 @@ from fastapi import FastAPI, HTTPException
 from datetime import timedelta
 from jose import jwt
 from sqlalchemy.exc import OperationalError
+from sqlalchemy import text
 from pythonprojecttemplate.api.auth.token_service import create_tokens, refresh_access_token, revoke_tokens, verify_token
 from pythonprojecttemplate.api.auth.auth_service import SECRET_KEY, ALGORITHM, get_password_hash
 from pythonprojecttemplate.api.api_router import api_router,API_PREFIX
 from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
 from pythonprojecttemplate.api.models.auth_models import User, ThirdPartyToken
-from main import app
+from pythonprojecttemplate.api.main import app
 
 app.include_router(api_router)
 
@@ -21,7 +22,7 @@ def check_database_connection():
     try:
         db = MySQL_Database()
         session = db.get_session()
-        session.execute("SELECT 1")
+        session.execute(text("SELECT 1"))
         session.close()
         return True
     except OperationalError:

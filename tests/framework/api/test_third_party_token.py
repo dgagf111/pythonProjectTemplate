@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from pythonprojecttemplate.config.config import config
 from zoneinfo import ZoneInfo
 from sqlalchemy.exc import OperationalError
+from sqlalchemy import text
 
 TIME_ZONE = ZoneInfo(config.get_time_zone())
 import pytest
@@ -12,7 +13,7 @@ from pythonprojecttemplate.api.api_router import api_router, API_PREFIX
 from pythonprojecttemplate.api.auth.token_service import generate_permanent_token
 from pythonprojecttemplate.api.models.auth_models import User, ThirdPartyToken, Token
 from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
-from main import app
+from pythonprojecttemplate.api.main import app
 
 app.include_router(api_router)
 
@@ -23,7 +24,7 @@ def check_database_connection():
     try:
         db = MySQL_Database()
         session = db.get_session()
-        session.execute("SELECT 1")
+        session.execute(text("SELECT 1"))
         session.close()
         return True
     except OperationalError:
