@@ -1,285 +1,221 @@
 ---
-name: Git Commit Helper
+name: Git 提交助手
 
-description: Generate descriptive commit messages by analyzing git diffs. Use when the user asks for help writing commit messages or reviewing staged changes. Generate commit message in Chinese and commit.
+description: git-commit-helper，通过分析 git diff 来生成描述性的提交信息。当用户请求帮助编写提交信息或审查已暂存更改时使用。使用中文生成提交信息并提交代码。
 ---
 
-# Git Commit Helper
+# Git 提交助手
 
-## Quick start
+## 快速开始
 
-Analyze staged changes and generate commit message:
+分析已暂存的更改并生成提交信息：
 
 ```bash
-
-# View staged changes
-
+# 查看已暂存的更改
 git diff --staged
 
-# Generate commit message based on changes
-
-# (Claude will analyze the diff and suggest a message)
-
+# 根据更改生成提交信息
+# （Claude 将分析 diff 并建议一条提交信息）
 ```
 
-## Commit message format
+## 提交信息格式
 
-Follow conventional commits format:
+遵循 Conventional Commits 格式：
 
 ```
-
 <type>(<scope>): <description>
 
-[optional body]
+[可选正文]
 
-[optional footer]
-
+[可选页脚]
 ```
 
-### Types
+### 类型
 
-- **feat**: New feature
+- **feat**: 新功能
+- **fix**: Bug 修复
+- **docs**: 文档修改
+- **style**: 代码样式修改（格式化、缺少分号等）
+- **refactor**: 代码重构
+- **test**: 添加或更新测试
+- **chore**: 维护性任务
 
-- **fix**: Bug fix
+### 示例
 
-- **docs**: Documentation changes
-
-- **style**: Code style changes (formatting, missing semicolons)
-
-- **refactor**: Code refactoring
-
-- **test**: Adding or updating tests
-
-- **chore**: Maintenance tasks
-
-### Examples
-
-**Feature commit:**
+**新功能提交：**
 
 ```
+feat(auth): 添加 JWT 认证
 
-feat(auth): add JWT authentication
-
-Implement JWT-based authentication system with:
-
-- Login endpoint with token generation
-
-- Token validation middleware
-
-- Refresh token support
-
+实现基于 JWT 的认证系统，包括：
+- 带令牌生成的登录端点
+- 令牌验证中间件
+- 刷新令牌支持
 ```
 
-**Bug fix:**
+**Bug 修复：**
 
 ```
+fix(api): 处理用户资料中的 null 值
 
-fix(api): handle null values in user profile
-
-Prevent crashes when user profile fields are null.
-
-Add null checks before accessing nested properties.
-
+防止当用户资料字段为 null 时出现崩溃。
+在访问嵌套属性前增加 null 检查。
 ```
 
-**Refactor:**
+**代码重构：**
 
 ```
+refactor(database): 简化查询构建器
 
-refactor(database): simplify query builder
-
-Extract common query patterns into reusable functions.
-
-Reduce code duplication in database layer.
-
+将常见的查询模式提取为可重用函数。
+减少数据库层的代码重复。
 ```
 
-## Analyzing changes
+## 分析更改
 
-Review what's being committed:
+查看将要提交的内容：
 
 ```bash
-
-# Show files changed
-
+# 显示已修改文件
 git status
 
-# Show detailed changes
-
+# 显示详细更改
 git diff --staged
 
-# Show statistics
-
+# 显示统计信息
 git diff --staged --stat
 
-# Show changes for specific file
-
+# 显示指定文件的更改
 git diff --staged path/to/file
-
 ```
 
-## Commit message guidelines
+## 提交信息编写指南
 
-**DO:**
+**应当：**
 
-- Use imperative mood ("add feature" not "added feature")
+- 使用祈使语气（“add feature”，而不是“added feature”）
+- 保持首行少于 50 个字符
+- 首字母大写
+- 不在摘要末尾加句号
+- 在正文中解释“为什么”，而不仅仅是“做了什么”
 
-- Keep first line under 50 characters
+**不应：**
 
-- Capitalize first letter
+- 使用模糊的信息，如 “update” 或 “fix stuff”
+- 在摘要中包含技术实现细节
+- 在摘要行写成段落
+- 使用过去时态
 
-- No period at end of summary
+## 多文件提交
 
-- Explain WHY not just WHAT in body
-
-**DON'T:**
-
-- Use vague messages like "update" or "fix stuff"
-
-- Include technical implementation details in summary
-
-- Write paragraphs in summary line
-
-- Use past tense
-
-## Multi-file commits
-
-When committing multiple related changes:
+当提交多个相关更改时：
 
 ```
+refactor(core): 重构认证模块
 
-refactor(core): restructure authentication module
+- 将认证逻辑从控制器移动到服务层
+- 将验证逻辑提取为独立验证器
+- 更新测试以适配新结构
+- 添加认证流程的集成测试
 
-- Move auth logic from controllers to service layer
-
-- Extract validation into separate validators
-
-- Update tests to use new structure
-
-- Add integration tests for auth flow
-
-Breaking change: Auth service now requires config object
-
+重大变更：认证服务现在需要配置对象
 ```
 
-## Scope examples
+## 作用域示例
 
-**Frontend:**
+**前端：**
 
-- `feat(ui): add loading spinner to dashboard`
+- `feat(ui): 为仪表板添加加载动画`
+- `fix(form): 验证邮箱格式`
 
-- `fix(form): validate email format`
+**后端：**
 
-**Backend:**
+- `feat(api): 添加用户资料接口`
+- `fix(db): 解决连接池泄漏问题`
 
-- `feat(api): add user profile endpoint`
+**基础设施：**
 
-- `fix(db): resolve connection pool leak`
+- `chore(ci): 更新 Node 版本至 20`
+- `feat(docker): 添加多阶段构建`
 
-**Infrastructure:**
+## 重大变更（Breaking Changes）
 
-- `chore(ci): update Node version to 20`
-
-- `feat(docker): add multi-stage build`
-
-## Breaking changes
-
-Indicate breaking changes clearly:
+明确标示重大变更：
 
 ```
+feat(api)!: 重构 API 响应格式
 
-feat(api)!: restructure API response format
+BREAKING CHANGE: 所有 API 响应现在遵循 JSON:API 规范
 
-BREAKING CHANGE: All API responses now follow JSON:API spec
-
-Previous format:
-
+之前格式：
 { "data": {…}, "status": "ok" }
 
-New format:
-
+新的格式：
 { "data": {…}, "meta": {…} }
 
-Migration guide: Update client code to handle new response structure
-
+迁移指南：更新客户端代码以处理新的响应结构
 ```
 
-## Template workflow
+## 模板化工作流程
 
-1. **Review changes**: `git diff --staged`
+1. **审查更改**：`git diff --staged`
 
-2. **Identify type**: Is it feat, fix, refactor, etc.?
+2. **确定类型**：是 feat、fix、refactor 等？
 
-3. **Determine scope**: What part of the codebase?
+3. **确定作用域**：修改的是代码的哪个部分？
 
-4. **Write summary**: Brief, imperative description
+4. **编写摘要**：简短且使用祈使语气
 
-5. **Add body**: Explain why and what impact
+5. **补充正文**：解释原因和影响
 
-6. **Note breaking changes**: If applicable
+6. **标注重大变更**：如适用
 
-## Interactive commit helper
+## 交互式提交助手
 
-Use `git add -p` for selective staging:
+使用 `git add -p` 选择性暂存：
 
 ```bash
-
-# Stage changes interactively
-
+# 交互式暂存更改
 git add -p
 
-# Review what's staged
-
+# 查看已暂存的内容
 git diff --staged
 
-# Commit with message
-
+# 提交并写入信息
 git commit -m "type(scope): description"
-
 ```
 
-## Amending commits
+## 修改提交
 
-Fix the last commit message:
+修正上一次提交信息：
 
 ```bash
-
-# Amend commit message only
-
+# 仅修改提交信息
 git commit --amend
 
-# Amend and add more changes
-
+# 修改并添加更多更改
 git add forgotten-file.js
-
 git commit --amend --no-edit
-
 ```
 
-## Best practices
+## 最佳实践
 
-1. **Atomic commits** - One logical change per commit
+1. **原子提交** —— 每次提交仅包含一个逻辑更改
 
-2. **Test before commit** - Ensure code works
+2. **提交前测试** —— 确保代码可运行
 
-3. **Reference issues** - Include issue numbers if applicable
+3. **引用问题** —— 如果适用，包含 issue 编号
 
-4. **Keep it focused** - Don't mix unrelated changes
+4. **保持聚焦** —— 不要混合无关更改
 
-5. **Write for humans** - Future you will read this
+5. **为人类编写** —— 未来的你会阅读这些信息
 
-## Commit message checklist
+## 提交信息检查清单
 
-- [ ] Type is appropriate (feat/fix/docs/etc.)
-
-- [ ] Scope is specific and clear
-
-- [ ] Summary is under 50 characters
-
-- [ ] Summary uses imperative mood
-
-- [ ] Body explains WHY not just WHAT
-
-- [ ] Breaking changes are clearly marked
-
-- [ ] Related issue numbers are included
+- [ ] 类型合适（feat/fix/docs 等）
+- [ ] 作用域具体且明确
+- [ ] 摘要不超过 50 个字符
+- [ ] 摘要使用祈使语气
+- [ ] 正文解释“为什么”而不仅是“做了什么”
+- [ ] 明确标注重大变更
+- [ ] 包含相关 issue 编号
