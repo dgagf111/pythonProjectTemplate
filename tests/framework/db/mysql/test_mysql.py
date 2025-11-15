@@ -2,10 +2,10 @@ import pytest
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
-from db.mysql.mysql import MySQL_Database
+from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
 from tests.framework.db.mysql.test_table import Test_Table
-from db.mysql.transaction.transaction_manager import TransactionManager
-from log.logHelper import get_logger
+from pythonprojecttemplate.db.mysql.transaction.transaction_manager import TransactionManager
+from pythonprojecttemplate.log.logHelper import get_logger
 
 logger = get_logger()
 

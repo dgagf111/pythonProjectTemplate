@@ -26,20 +26,20 @@ except ImportError as e:
     
     # 兼容旧的启动方式
     try:
-        from config.config import config
+        from pythonprojecttemplate.config.config import config
         import importlib
-        from log.logHelper import get_logger
-        from scheduler.scheduler_center import scheduler_center
+        from pythonprojecttemplate.log.logHelper import get_logger
+        from pythonprojecttemplate.scheduler.scheduler_center import scheduler_center
         import signal
-        from monitoring.main import monitoring_center
+        from pythonprojecttemplate.monitoring.main import monitoring_center
         import asyncio
         import threading
         from fastapi import FastAPI, Request
-        from api.api_router import api_router
-        from api.exception.custom_exceptions import APIException
+        from pythonprojecttemplate.api.api_router import api_router
+        from pythonprojecttemplate.api.exception.custom_exceptions import APIException
         from fastapi.responses import JSONResponse
-        from api.http_status import HTTPStatus
-        from api.models.result_vo import ResultVO
+        from pythonprojecttemplate.api.http_status import HTTPStatus
+        from pythonprojecttemplate.api.models.result_vo import ResultVO
         import uvicorn
 
         # 获取全局日志实例
@@ -51,6 +51,9 @@ except ImportError as e:
             module_config = config.get_module_config()
             module_names = module_config.get('modules', [])
             base_path = module_config.get('base_path', 'modules')
+
+            if not base_path.startswith("pythonprojecttemplate"):
+                base_path = f"pythonprojecttemplate.{base_path.lstrip('.')}"
             
             for module_name in module_names:
                 try:

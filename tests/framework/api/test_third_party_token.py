@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from config.config import config
+from pythonprojecttemplate.config.config import config
 from zoneinfo import ZoneInfo
 from sqlalchemy.exc import OperationalError
 
@@ -8,10 +8,10 @@ import pytest
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
-from api.api_router import api_router, API_PREFIX
-from api.auth.token_service import generate_permanent_token
-from api.models.auth_models import User, ThirdPartyToken, Token
-from db.mysql.mysql import MySQL_Database
+from pythonprojecttemplate.api.api_router import api_router, API_PREFIX
+from pythonprojecttemplate.api.auth.token_service import generate_permanent_token
+from pythonprojecttemplate.api.models.auth_models import User, ThirdPartyToken, Token
+from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
 from main import app
 
 app.include_router(api_router)

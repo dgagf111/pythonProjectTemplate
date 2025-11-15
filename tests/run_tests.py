@@ -11,7 +11,7 @@ from typing import List
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from log.logHelper import get_logger
+from pythonprojecttemplate.log.logHelper import get_logger
 
 logger = get_logger()
 
@@ -23,42 +23,42 @@ class UnifiedTestRunner:
         self.available_modules = {
             'cache': {
                 'name': '缓存系统',
-                'script': 'cache/test_cache_module.py',
+                'script': 'src/pythonprojecttemplate/cache/test_cache_module.py',
                 'description': '测试内存缓存、Redis缓存、缓存管理器等功能'
             },
             'config': {
                 'name': '配置管理',
-                'script': 'config/test_config_module.py',
+                'script': 'src/pythonprojecttemplate/config/test_config_module.py',
                 'description': '测试配置文件加载、环境变量解析、配置获取等功能'
             },
             'database': {
                 'name': '数据库系统',
-                'script': 'db/test_database_module.py',
+                'script': 'src/pythonprojecttemplate/db/test_database_module.py',
                 'description': '测试数据库连接、事务管理、CRUD操作等功能'
             },
             'scheduler': {
                 'name': '任务调度',
-                'script': 'scheduler/test_scheduler_module.py',
+                'script': 'src/pythonprojecttemplate/scheduler/test_scheduler_module.py',
                 'description': '测试任务调度、触发器、重试机制等功能'
             },
             'monitoring': {
                 'name': '监控系统',
-                'script': 'monitoring/test_monitoring_module.py',
+                'script': 'src/pythonprojecttemplate/monitoring/test_monitoring_module.py',
                 'description': '测试Prometheus指标、系统监控、告警等功能'
             },
             'log': {
                 'name': '日志系统',
-                'script': 'log/test_log_module.py',
+                'script': 'src/pythonprojecttemplate/log/test_log_module.py',
                 'description': '测试日志记录、文件管理、异常处理等功能'
             },
             'api': {
                 'name': 'API服务',
-                'script': 'api/test_api_module.py',
+                'script': 'src/pythonprojecttemplate/api/test_api_module.py',
                 'description': '测试API路由、认证系统、响应模型等功能'
             },
             'utils': {
                 'name': '工具类库',
-                'script': 'utils/test_utils_module.py',
+                'script': 'src/pythonprojecttemplate/utils/test_utils_module.py',
                 'description': '测试加密工具、Excel处理、HTTP工具等功能'
             }
         }

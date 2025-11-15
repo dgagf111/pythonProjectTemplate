@@ -5,11 +5,11 @@ from fastapi import FastAPI, HTTPException
 from datetime import timedelta
 from jose import jwt
 from sqlalchemy.exc import OperationalError
-from api.auth.token_service import create_tokens, refresh_access_token, revoke_tokens, verify_token
-from api.auth.auth_service import SECRET_KEY, ALGORITHM, get_password_hash
-from api.api_router import api_router,API_PREFIX
-from db.mysql.mysql import MySQL_Database
-from api.models.auth_models import User, ThirdPartyToken
+from pythonprojecttemplate.api.auth.token_service import create_tokens, refresh_access_token, revoke_tokens, verify_token
+from pythonprojecttemplate.api.auth.auth_service import SECRET_KEY, ALGORITHM, get_password_hash
+from pythonprojecttemplate.api.api_router import api_router,API_PREFIX
+from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
+from pythonprojecttemplate.api.models.auth_models import User, ThirdPartyToken
 from main import app
 
 app.include_router(api_router)

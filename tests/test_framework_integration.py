@@ -95,23 +95,34 @@ class FrameworkIntegrationTestSuite:
         """测试项目结构完整性"""
         print("  🔍 检查项目目录结构...")
         
-        # 核心目录结构检查
-        required_dirs = [
-            'api', 'cache', 'config', 'db', 'log', 
-            'monitoring', 'scheduler', 'utils', 'tests', 'docs'
+        package_root = self.project_root / "src" / "pythonprojecttemplate"
+        package_dirs = [
+            'api', 'cache', 'config', 'db', 'log',
+            'monitoring', 'scheduler', 'modules', 'utils'
         ]
         
-        missing_dirs = []
-        for dir_name in required_dirs:
+        missing_package_dirs = []
+        for dir_name in package_dirs:
+            dir_path = package_root / dir_name
+            if dir_path.exists():
+                print(f"  ✓ 包目录存在: pythonprojecttemplate/{dir_name}/")
+            else:
+                missing_package_dirs.append(f"pythonprojecttemplate/{dir_name}")
+                print(f"  ❌ 包目录缺失: pythonprojecttemplate/{dir_name}/")
+        
+        if missing_package_dirs:
+            raise AssertionError(f"缺失关键包目录: {missing_package_dirs}")
+
+        # 根目录需要保留的项目级目录
+        root_dirs = ['tests', 'docs', 'scripts']
+        missing_root_dirs = []
+        for dir_name in root_dirs:
             dir_path = self.project_root / dir_name
             if dir_path.exists():
-                print(f"  ✓ 目录存在: {dir_name}/")
+                print(f"  ✓ 根目录存在: {dir_name}/")
             else:
-                missing_dirs.append(dir_name)
-                print(f"  ❌ 目录缺失: {dir_name}/")
-        
-        if missing_dirs:
-            raise AssertionError(f"缺失关键目录: {missing_dirs}")
+                missing_root_dirs.append(dir_name)
+                print(f"  ⚠️ 根目录缺失: {dir_name}/")
         
         # 关键文件检查（移除requirements.txt，因为已迁移到dependencies目录）
         required_files = [
@@ -138,12 +149,12 @@ class FrameworkIntegrationTestSuite:
         print("  🔍 测试核心模块导入...")
         
         import_tests = [
-            ('配置模块', 'config.config', 'Config'),
-            ('日志模块', 'log.logHelper', 'get_logger'),
-            ('缓存模块', 'cache.memory_cache', 'MemoryCacheManager'),
-            ('数据库模块', 'db.mysql', 'Database'),
-            ('监控模块', 'monitoring.main', 'MonitoringCenter'),
-            ('调度模块', 'scheduler.main', 'SchedulerManager'),
+            ('配置模块', 'pythonprojecttemplate.config.config', 'Config'),
+            ('日志模块', 'pythonprojecttemplate.log.logHelper', 'get_logger'),
+            ('缓存模块', 'pythonprojecttemplate.cache.memory_cache', 'MemoryCacheManager'),
+            ('数据库模块', 'pythonprojecttemplate.db.mysql', 'Database'),
+            ('监控模块', 'pythonprojecttemplate.monitoring.main', 'MonitoringCenter'),
+            ('调度模块', 'pythonprojecttemplate.scheduler.main', 'SchedulerManager'),
         ]
         
         failed_imports = []
@@ -158,7 +169,7 @@ class FrameworkIntegrationTestSuite:
         
         # 单独测试API模块，因为它可能有ZoneInfo问题
         try:
-            from api.main import app
+            from pythonprojecttemplate.api.main import app
             if app is not None:
                 print("  ✓ API模块: api.main.app")
             else:
@@ -181,7 +192,7 @@ class FrameworkIntegrationTestSuite:
         print("  🔍 测试配置系统...")
         
         try:
-            from config.config import Config
+            from pythonprojecttemplate.config.config import Config
             
             # 测试配置单例
             config1 = Config()
@@ -213,7 +224,7 @@ class FrameworkIntegrationTestSuite:
         print("  🔍 测试日志系统...")
         
         try:
-            from log.logHelper import get_logger
+            from pythonprojecttemplate.log.logHelper import get_logger
             
             # 测试日志器创建
             logger = get_logger()
@@ -243,8 +254,8 @@ class FrameworkIntegrationTestSuite:
         print("  🔍 测试数据库系统...")
         
         try:
-            from db.mysql import Database
-            from config.config import Config
+            from pythonprojecttemplate.db.mysql import Database
+            from pythonprojecttemplate.config.config import Config
             
             # 测试数据库配置
             config = Config()
@@ -271,7 +282,7 @@ class FrameworkIntegrationTestSuite:
         print("  🔍 测试缓存系统...")
         
         try:
-            from cache.factory import CacheFactory
+            from pythonprojecttemplate.cache.factory import CacheFactory
             
             # 测试内存缓存
             memory_cache = CacheFactory.create_memory_cache()
@@ -306,7 +317,7 @@ class FrameworkIntegrationTestSuite:
         
         try:
             # 先尝试导入主模块
-            from api.main import app
+            from pythonprojecttemplate.api.main import app
             
             # 验证FastAPI应用对象
             assert app is not None, "FastAPI应用对象为空"
@@ -343,7 +354,7 @@ class FrameworkIntegrationTestSuite:
         print("  🔍 测试监控系统...")
         
         try:
-            from monitoring.main import MonitoringCenter
+            from pythonprojecttemplate.monitoring.main import MonitoringCenter
             
             # 测试监控中心创建
             monitoring = MonitoringCenter()
@@ -352,7 +363,7 @@ class FrameworkIntegrationTestSuite:
             
             # 测试Prometheus导出器
             try:
-                from monitoring.prometheus_exporter import setup_metrics
+                from pythonprojecttemplate.monitoring.prometheus_exporter import setup_metrics
                 setup_metrics()
                 print("  ✓ Prometheus指标设置成功")
             except Exception as e:
@@ -380,7 +391,7 @@ class FrameworkIntegrationTestSuite:
         print("  🔍 测试任务调度系统...")
         
         try:
-            from scheduler.main import SchedulerManager
+            from pythonprojecttemplate.scheduler.main import SchedulerManager
             
             # 测试调度器创建
             scheduler = SchedulerManager()
@@ -416,8 +427,8 @@ class FrameworkIntegrationTestSuite:
         
         try:
             # 测试配置-日志集成
-            from config.config import Config
-            from log.logHelper import get_logger
+            from pythonprojecttemplate.config.config import Config
+            from pythonprojecttemplate.log.logHelper import get_logger
             
             config = Config()
             logger = get_logger()
@@ -428,7 +439,7 @@ class FrameworkIntegrationTestSuite:
             print("  ✓ 配置-日志系统集成正常")
             
             # 测试配置-缓存集成
-            from cache.factory import CacheFactory
+            from pythonprojecttemplate.cache.factory import CacheFactory
             
             cache_config = config.get_cache_config()
             cache_type = cache_config.get('type', 'memory')

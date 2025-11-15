@@ -1,15 +1,15 @@
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
-from api.api_router import api_router, API_PREFIX
-from api.auth.token_service import create_tokens, revoke_tokens
-from config.config import config
-from api.auth.auth_service import create_access_token, create_user, ALGORITHM, SECRET_KEY, get_current_user, get_password_hash
+from pythonprojecttemplate.api.api_router import api_router, API_PREFIX
+from pythonprojecttemplate.api.auth.token_service import create_tokens, revoke_tokens
+from pythonprojecttemplate.config.config import config
+from pythonprojecttemplate.api.auth.auth_service import create_access_token, create_user, ALGORITHM, SECRET_KEY, get_current_user, get_password_hash
 from datetime import timedelta
-from db.mysql.mysql import MySQL_Database
-from api.models.auth_models import User
+from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
+from pythonprojecttemplate.api.models.auth_models import User
 from jose import jwt
-from api.exception.custom_exceptions import InvalidCredentialsException, InvalidTokenException, TokenRevokedException, UserNotFoundException
-from api.models.result_vo import ResultVO
+from pythonprojecttemplate.api.exception.custom_exceptions import InvalidCredentialsException, InvalidTokenException, TokenRevokedException, UserNotFoundException
+from pythonprojecttemplate.api.models.result_vo import ResultVO
 from main import app
 from sqlalchemy.exc import OperationalError
 
@@ -20,7 +20,7 @@ client = TestClient(app)
 import pytest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from config.config import config
+from pythonprojecttemplate.config.config import config
 
 # 检查数据库连接是否可用
 def check_database_connection():

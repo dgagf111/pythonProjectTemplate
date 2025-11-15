@@ -1,11 +1,11 @@
 import pytest
 import requests
 import time
-from monitoring.main import monitoring_center
-from monitoring.prometheus_exporter import REQUEST_COUNT, RESPONSE_TIME, CPU_USAGE, MEMORY_USAGE
-from monitoring.alerting import check_cpu_usage, check_memory_usage
+from pythonprojecttemplate.monitoring.main import monitoring_center
+from pythonprojecttemplate.monitoring.prometheus_exporter import REQUEST_COUNT, RESPONSE_TIME, CPU_USAGE, MEMORY_USAGE
+from pythonprojecttemplate.monitoring.alerting import check_cpu_usage, check_memory_usage
 from unittest.mock import patch
-from log.logHelper import get_logger
+from pythonprojecttemplate.log.logHelper import get_logger
 
 logger = get_logger()
 
@@ -54,7 +54,7 @@ def test_system_metrics_update(mock_memory, mock_cpu):
     assert CPU_USAGE._value.get() == 50.0
     assert MEMORY_USAGE._value.get() == 60.0
 
-@patch('monitoring.alerting.logger.warning')
+@patch('pythonprojecttemplate.monitoring.alerting.logger.warning')
 def test_alerting(mock_logger):
     # 测试 CPU 使用率报警
     assert not check_cpu_usage(threshold=90)  # 不触发报警

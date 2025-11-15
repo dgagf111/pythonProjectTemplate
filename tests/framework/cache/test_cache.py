@@ -1,11 +1,11 @@
 import pytest
 import threading
 import time
-from cache.cache_manager import get_cache_manager
+from pythonprojecttemplate.cache.cache_manager import get_cache_manager
 import redis
 from unittest.mock import patch
-from cache.memory_cache import MemoryCacheManager
-from cache.redis_cache import RedisCacheManager
+from pythonprojecttemplate.cache.memory_cache import MemoryCacheManager
+from pythonprojecttemplate.cache.redis_cache import RedisCacheManager
 
 import logging
 import io

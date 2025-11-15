@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from db.mysql.mysql import MySQL_Base
+from pythonprojecttemplate.db.mysql.mysql import MySQL_Base
 
 class Test_Table(MySQL_Base):
     __tablename__ = 'test_table'

@@ -1,10 +1,14 @@
+import importlib.resources as resources
+
 import pytest
 import yaml
-from config.config import Config, config
+
+from pythonprojecttemplate.config.config import Config, config
 
 @pytest.fixture(scope="module")
 def env_config():
-    with open('env.yaml', 'r') as file:
+    env_file = resources.files("pythonprojecttemplate").joinpath("env.yaml")
+    with env_file.open('r', encoding='utf-8') as file:
         return yaml.safe_load(file)
 
 def test_env_file_attributes(env_config):

@@ -5,7 +5,7 @@
 """
 
 import pytest
-from modules.test.main import run
+from pythonprojecttemplate.modules.test.main import run
 
 def test_run_function():
     """测试 test 模块的 run 函数"""

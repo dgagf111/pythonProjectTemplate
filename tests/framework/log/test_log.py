@@ -2,7 +2,7 @@ import pytest
 import os
 import shutil
 from datetime import datetime
-from log.logHelper import LogHelper, get_logger
+from pythonprojecttemplate.log.logHelper import LogHelper, get_logger
 
 # 测试开始和结束的钩子函数
 def pytest_sessionstart(session):
