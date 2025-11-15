@@ -1,10 +1,17 @@
 from datetime import datetime, timedelta, UTC, timezone
 from typing import Tuple
 from jose import jwt
-from pythonprojecttemplate.config.config import config
 from pythonprojecttemplate.cache.cache_manager import get_cache_manager
+from pythonprojecttemplate.config.settings import settings
 from pythonprojecttemplate.log.logHelper import get_logger
-from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_jwt_token, create_access_token, create_refresh_token
+from .utils import (
+    SECRET_KEY,
+    ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    create_access_token,
+    create_refresh_token,
+    create_jwt_token,
+)
 from pythonprojecttemplate.cache.cache_keys_manager import CacheKeysManager
 from ..models.auth_models import Token
 from sqlalchemy.orm import Session
@@ -14,26 +21,13 @@ from pythonprojecttemplate.api.exception.custom_exceptions import InvalidTokenEx
 
 # 日志
 logger = get_logger()
-# 获取配置
-api_config = config.get_api_config()
-TIME_ZONE = ZoneInfo(config.get_time_zone())
-
-# 设置关键常量
-SECRET_KEY = api_config.get("secret_key")
-ALGORITHM = "HS256" 
-ACCESS_TOKEN_EXPIRE_MINUTES = eval(str(api_config.get("access_token_expire_minutes")))
-REFRESH_TOKEN_EXPIRE_DAYS = eval(str(api_config.get("refresh_token_expire_days")))
+# 配置
+TIME_ZONE = ZoneInfo(settings.common.time_zone)
+REFRESH_TOKEN_EXPIRE_DAYS = settings.api.refresh_token_expire_days
 
 # 使用缓存管理器实例
 cache_manager = get_cache_manager()
 cache_keys = CacheKeysManager()
-
-def create_jwt_token(data: dict, expires_delta: timedelta) -> str:
-    to_encode = data.copy()
-    expire = datetime.now(UTC) + expires_delta
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
 
 def create_tokens(username: str) -> Tuple[str, str]:
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

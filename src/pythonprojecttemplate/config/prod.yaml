@@ -1,11 +1,15 @@
 # 生产环境配置文件
-# mysql连接参数（生产环境）
-mysql:
+
+database:
+  driver: mysql+pymysql
   username: ${MYSQL_USERNAME}
   password: ${MYSQL_PASSWORD}
   host: ${MYSQL_HOST}
   port: ${MYSQL_PORT}
   database: ${MYSQL_DATABASE}
+  pool_size: 10
+  max_overflow: 20
+  pool_recycle: 3600
 
 # 定时器任务配置
 tasks:
@@ -103,5 +107,5 @@ api:
   # 访问令牌过期时间，生产环境可能需要更短的过期时间
   access_token_expire_minutes: 30  # 30分钟
 
-  # 刷新令牌过期时间，生产环境也可能需要更短的过期时间
-  refresh_token_expire_days: 60 * 24 * 3  # 3天
+  # 刷新令牌过期时间，生产环境也可能需要更短的过期时间（单位：天）
+  refresh_token_expire_days: 3

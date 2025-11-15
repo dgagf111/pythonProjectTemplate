@@ -5,7 +5,8 @@
 """
 
 from typing import Dict, Any
-from .config.config import config
+
+from pythonprojecttemplate.config.settings import settings
 
 class Constants:
     """系统常量类 - 单例模式"""
@@ -27,43 +28,14 @@ class Constants:
     def _load_constants(self):
         """加载所有常量"""
         # API配置常量
-        try:
-            api_config = config.get_api_config()
-        except:
-            # 如果配置加载失败，使用默认值
-            api_config = {}
-        
+        api_config = settings.api
+
         # JWT相关常量
-        self.JWT_SECRET_KEY = api_config.get("secret_key") or "default_secret_key_for_development"
+        self.JWT_SECRET_KEY = api_config.secret_key or "default_secret_key_for_development"
         self.JWT_ALGORITHM = "HS256"
-        
-        # 处理访问令牌过期时间
-        access_token_config = api_config.get("access_token_expire_minutes", "180")
-        try:
-            if isinstance(access_token_config, str) and access_token_config.strip():
-                # 尝试解析表达式
-                if '*' in access_token_config or '+' in access_token_config:
-                    self.ACCESS_TOKEN_EXPIRE_MINUTES = int(eval(access_token_config))
-                else:
-                    self.ACCESS_TOKEN_EXPIRE_MINUTES = int(access_token_config)
-            else:
-                self.ACCESS_TOKEN_EXPIRE_MINUTES = 180  # 默认3小时
-        except (ValueError, SyntaxError, TypeError):
-            self.ACCESS_TOKEN_EXPIRE_MINUTES = 180  # 默认3小时
-        
-        # 处理刷新令牌过期时间
-        refresh_token_config = api_config.get("refresh_token_expire_days", "7")
-        try:
-            if isinstance(refresh_token_config, str) and refresh_token_config.strip():
-                # 尝试解析表达式
-                if '*' in refresh_token_config or '+' in refresh_token_config:
-                    self.REFRESH_TOKEN_EXPIRE_DAYS = int(eval(refresh_token_config))
-                else:
-                    self.REFRESH_TOKEN_EXPIRE_DAYS = int(refresh_token_config)
-            else:
-                self.REFRESH_TOKEN_EXPIRE_DAYS = 7  # 默认7天
-        except (ValueError, SyntaxError, TypeError):
-            self.REFRESH_TOKEN_EXPIRE_DAYS = 7  # 默认7天
+
+        self.ACCESS_TOKEN_EXPIRE_MINUTES = api_config.access_token_expire_minutes
+        self.REFRESH_TOKEN_EXPIRE_DAYS = api_config.refresh_token_expire_days
         
         # 数据库常量
         self.DB_POOL_SIZE = 10
@@ -71,29 +43,23 @@ class Constants:
         self.DB_POOL_TIMEOUT = 30
         
         # 缓存常量
-        try:
-            cache_config = config.get_cache_config()
-        except:
-            cache_config = {}
-            
+        cache_config = settings.cache
+
         self.DEFAULT_CACHE_TTL = 3600  # 1小时
         self.AUTH_TOKEN_TTL = self.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         
         # Redis配置
-        if cache_config.get('type') == 'redis':
-            redis_config = cache_config.get('redis', {})
-            self.REDIS_HOST = redis_config.get('host', 'localhost')
-            self.REDIS_PORT = redis_config.get('port', 6379)
-            self.REDIS_DB = redis_config.get('db', 0)
+        if cache_config.type == 'redis':
+            self.REDIS_HOST = cache_config.redis.host
+            self.REDIS_PORT = cache_config.redis.port
+            self.REDIS_DB = cache_config.redis.db
         else:
             self.REDIS_HOST = 'localhost'
             self.REDIS_PORT = 6379
             self.REDIS_DB = 0
         
         # API常量
-        api_version = api_config.get("api_version", "v1")
-        # 如果api_version为空或None，使用默认值
-        self.API_VERSION = api_version if api_version else "v1"
+        self.API_VERSION = settings.common.api_version or "v1"
         # 确保API_PREFIX不以斜杠结尾
         self.API_PREFIX = f"/api/{self.API_VERSION}"
         
@@ -121,20 +87,13 @@ class Constants:
         self.ALLOWED_FILE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.pdf', '.doc', '.docx', '.xlsx'}
         
         # 监控常量
-        try:
-            monitoring_config = config.get_monitoring_config()
-        except:
-            monitoring_config = {}
-            
-        self.PROMETHEUS_PORT = monitoring_config.get('prometheus_port', 9966)
-        self.CPU_THRESHOLD = monitoring_config.get('cpu_threshold', 80)
-        self.MEMORY_THRESHOLD = monitoring_config.get('memory_threshold', 80)
+        monitoring_config = settings.monitoring
+        self.PROMETHEUS_PORT = monitoring_config.prometheus_port
+        self.CPU_THRESHOLD = monitoring_config.cpu_threshold
+        self.MEMORY_THRESHOLD = monitoring_config.memory_threshold
         
         # 时区常量
-        try:
-            self.DEFAULT_TIMEZONE = config.get_time_zone() or 'UTC'
-        except:
-            self.DEFAULT_TIMEZONE = 'UTC'
+        self.DEFAULT_TIMEZONE = settings.common.time_zone or 'UTC'
 
 class CacheKeys:
     """缓存键常量类"""

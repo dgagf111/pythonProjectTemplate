@@ -1,10 +1,14 @@
-from prometheus_client import start_http_server
-from .prometheus_exporter import setup_metrics
-from .alerting import setup_alerting
-from pythonprojecttemplate.log.logHelper import get_logger
+import socket
 import threading
 import time
-import socket
+
+from prometheus_client import start_http_server
+
+from pythonprojecttemplate.config.settings import settings
+from pythonprojecttemplate.log.logHelper import get_logger
+
+from .alerting import setup_alerting
+from .prometheus_exporter import setup_metrics
 
 logger = get_logger()
 
@@ -23,7 +27,7 @@ class MonitoringCenter:
         logger.info("启动监控模块...")
         try:
             # 检查端口是否可用
-            port = 9966
+            port = settings.monitoring.prometheus_port
             if not self._is_port_available(port):
                 port = self._find_available_port()
             

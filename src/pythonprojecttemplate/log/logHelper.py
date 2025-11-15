@@ -1,19 +1,10 @@
-import sys
-import os
 import logging
-from logging.handlers import RotatingFileHandler
-from datetime import datetime
+import os
 import traceback
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
-# 添加项目根目录到 Python 路径
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-try:
-    from pythonprojecttemplate.config.config import config
-except ImportError as e:
-    print(f"Error importing config: {e}")
-    print(f"Current sys.path: {sys.path}")
-    raise
+from pythonprojecttemplate.config.settings import settings
 
 __all__ = ['get_logger']
 
@@ -84,10 +75,10 @@ class LogHelper:
         从配置文件加载日志配置。
         如果传入参数，则优先使用传入的参数。
         """
-        log_config = config.get_log_config()
-        self.project_name = project_name or log_config.get('project_name', 'default_project')
-        self.base_log_directory = base_log_directory or log_config.get('base_log_directory', '../log')
-        log_level_str = log_level or log_config.get('log_level', 'DEBUG').upper()
+        log_config = settings.logging
+        self.project_name = project_name or log_config.project_name
+        self.base_log_directory = base_log_directory or log_config.base_log_directory
+        log_level_str = (log_level or log_config.log_level).upper()
         # 确保默认日志级别为 DEBUG
         self.log_level = getattr(logging, log_level_str, logging.DEBUG)
 

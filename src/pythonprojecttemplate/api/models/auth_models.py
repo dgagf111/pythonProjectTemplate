@@ -1,10 +1,11 @@
 from sqlalchemy import Column, BigInteger, String, DateTime, Integer
 from sqlalchemy.sql import func
-from pythonprojecttemplate.db.mysql.mysql import MySQL_Base
 from zoneinfo import ZoneInfo
-from pythonprojecttemplate.config.config import config
 
-TIME_ZONE = ZoneInfo(config.get_time_zone())
+from pythonprojecttemplate.config.settings import settings
+from pythonprojecttemplate.db.mysql.mysql import MySQL_Base
+
+TIME_ZONE = ZoneInfo(settings.common.time_zone)
 
 # state的设计是大于等于0的都是可以访问的，小于0的都是不可访问的
 class User(MySQL_Base):

@@ -1,11 +1,15 @@
 # 开发环境配置文件
-# mysql连接参数（开发环境）
-mysql:
+
+database:
+  driver: mysql+pymysql
   username: your_username
   password: your_password
   host: localhost
   port: 3306
   database: your_database
+  pool_size: 5
+  max_overflow: 10
+  pool_recycle: 3600
 
 # 定时器任务配置
 tasks:
@@ -103,7 +107,7 @@ api:
   secret_key: your-secret-key-for-development
 
   # 访问令牌过期时间，单位：分钟，总时长：3小时
-  access_token_expire_minutes: 60 * 3
+  access_token_expire_minutes: 180
 
-  # 刷新令牌过期时间，单位：分钟，总时长：7天
-  refresh_token_expire_days: 60 * 24 * 7
+  # 刷新令牌过期时间，单位：天
+  refresh_token_expire_days: 7

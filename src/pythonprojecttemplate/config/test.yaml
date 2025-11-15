@@ -1,11 +1,15 @@
 # 测试环境配置文件
-# mysql连接参数（测试环境）
-mysql:
+
+database:
+  driver: mysql+pymysql
   username: test_user
   password: test_password
   host: localhost
   port: 3306
   database: test_database
+  pool_size: 2
+  max_overflow: 2
+  pool_recycle: 3600
 
 # 定时器任务配置
 tasks:
@@ -80,4 +84,4 @@ api:
 
   # 测试环境令牌过期时间设置为较短
   access_token_expire_minutes: 15  # 15分钟
-  refresh_token_expire_days: 60  # 1小时
+  refresh_token_expire_days: 2  # 2天

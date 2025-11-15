@@ -8,14 +8,13 @@ from alembic import context
 # 添加以下导入
 import os
 import sys
-from sqlalchemy import create_engine
 
 # 将项目根目录添加到 Python 路径
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
-from pythonprojecttemplate.config.config import config as app_config
-from pythonprojecttemplate.db.mysql.mysql import MySQL_Base
+from pythonprojecttemplate.config.settings import settings
+from pythonprojecttemplate.db.session import Base
 
 # ***************************只要在这里添加模型，就可以自动生成迁移脚本，并完成迁移***************************
 from pythonprojecttemplate.api.models.auth_models import User, Token, ThirdPartyToken
@@ -34,7 +33,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = MySQL_Base.metadata
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -43,8 +42,7 @@ target_metadata = MySQL_Base.metadata
 
 
 def get_url():
-    mysql_config = app_config.get_mysql_config()
-    return f"mysql+pymysql://{mysql_config['username']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}"
+    return settings.database.url
 
 
 def run_migrations_offline() -> None:

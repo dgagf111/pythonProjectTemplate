@@ -7,24 +7,15 @@ from datetime import datetime, timedelta, UTC
 from typing import Optional
 from pythonprojecttemplate.api.auth.token_service import create_tokens, verify_token
 from pythonprojecttemplate.cache.cache_manager import get_cache_manager
-from pythonprojecttemplate.config.config import config
-from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
+from pythonprojecttemplate.db.session import get_session
 from ..models.auth_models import User, Token
 from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from sqlalchemy.orm import Session
 from pythonprojecttemplate.cache.cache_keys_manager import CacheKeysManager
 from pythonprojecttemplate.api.exception.custom_exceptions import InvalidTokenException, UserNotFoundException, InvalidCredentialsException
 
-# 获取API配置
-api_config = config.get_api_config()
-
 # 获取缓存键管理器
 cache_keys = CacheKeysManager()
-
-# 设置关键常量
-SECRET_KEY = api_config.get("secret_key")  # 于JWT加密的密钥
-ALGORITHM = "HS256"  # JWT加密算法
-ACCESS_TOKEN_EXPIRE_MINUTES = eval(str(api_config.get("access_token_expire_minutes"))) # 访问令牌过期时间，单位：分钟，总时长：7天
 
 # 创建密码上下文，用于密码哈希和验证
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -40,11 +31,7 @@ def get_db():
     创建并yield一个数据库会话。
     在请求结束时自动关闭会话。
     """
-    db = MySQL_Database()
-    try:
-        yield db.get_session()
-    finally:
-        db.close_session()
+    yield from get_session()
 
 def generate_secret_key():
     """
