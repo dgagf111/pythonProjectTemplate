@@ -54,7 +54,7 @@ utils/
 #### 使用方法
 
 ```python
-from utils.encrypt import aes_encrypt
+from pythonprojecttemplate.utils.encrypt import aes_encrypt
 
 # AES加密
 encrypted_data = aes_encrypt.encrypt("sensitive_data", "your_key")
@@ -81,7 +81,7 @@ decrypted_data = aes_encrypt.decrypt(encrypted_data, "your_key")
 #### 使用方法
 
 ```python
-from utils.encrypt.rsa import rsa_encrypt
+from pythonprojecttemplate.utils.encrypt.rsa import rsa_encrypt
 
 # 生成密钥对
 public_key, private_key = rsa_encrypt.generate_keys(2048)
@@ -104,7 +104,7 @@ is_valid = rsa_encrypt.verify("message", signature, public_key)
 #### MD5哈希
 
 ```python
-from utils.encrypt import md5_encrypt
+from pythonprojecttemplate.utils.encrypt import md5_encrypt
 
 # MD5哈希
 hash_value = md5_encrypt.encrypt("input_string")
@@ -114,7 +114,7 @@ print(f"MD5: {hash_value}")
 #### SHA256哈希
 
 ```python
-from utils.encrypt import sha_256_encrypt
+from pythonprojecttemplate.utils.encrypt import sha_256_encrypt
 
 # SHA256哈希
 hash_value = sha_256_encrypt.encrypt("input_string")
@@ -141,7 +141,7 @@ print(f"SHA256: {hash_value}")
 #### Excel读取
 
 ```python
-from utils.excel import excel_utils
+from pythonprojecttemplate.utils.excel import excel_utils
 
 # 读取Excel文件
 data = excel_utils.read_excel("data.xlsx")
@@ -233,7 +233,7 @@ excel_utils.merge_excel_files([
 #### GET请求
 
 ```python
-from utils.http import http_util
+from pythonprojecttemplate.utils.http import http_util
 
 # 简单GET请求
 response = http_util.get("https://api.example.com/users")
@@ -371,9 +371,9 @@ except http_util.ConnectionError:
 ### 综合示例：数据处理管道
 
 ```python
-from utils.encrypt import aes_encrypt, md5_encrypt
-from utils.excel import excel_utils
-from utils.http import http_util
+from pythonprojecttemplate.utils.encrypt import aes_encrypt, md5_encrypt
+from pythonprojecttemplate.utils.excel import excel_utils
+from pythonprojecttemplate.utils.http import http_util
 import json
 
 def process_data_pipeline():
@@ -438,8 +438,8 @@ if __name__ == "__main__":
 
 ```python
 import os
-from utils.excel import excel_utils
-from utils.encrypt import sha_256_encrypt
+from pythonprojecttemplate.utils.excel import excel_utils
+from pythonprojecttemplate.utils.encrypt import sha_256_encrypt
 
 def batch_file_processor(input_dir, output_dir):
     """批量处理Excel文件并生成校验和"""
@@ -587,8 +587,8 @@ async def fetch_multiple_urls(urls):
 #### 健壮的错误处理
 
 ```python
-from utils.http import http_util
-from utils.excel import excel_utils
+from pythonprojecttemplate.utils.http import http_util
+from pythonprojecttemplate.utils.excel import excel_utils
 import logging
 
 logger = logging.getLogger(__name__)

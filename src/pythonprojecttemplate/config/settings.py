@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Self
 
 import yaml
 from pydantic import BaseModel, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
@@ -17,6 +17,42 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any
         else:
             result[key] = value
     return result
+
+
+class YamlConfigSettingsSource(PydanticBaseSettingsSource):
+    """
+    A source class that loads variables from a YAML file
+    """
+
+    def __init__(self, settings_cls: type[BaseSettings]) -> None:
+        super().__init__(settings_cls)
+
+    def _load_yaml(self, path: Path) -> Dict[str, Any]:
+        if not path.exists():
+            return {}
+        with path.open("r", encoding="utf-8") as fh:
+            data = yaml.safe_load(fh) or {}
+            if not isinstance(data, dict):
+                raise ValueError(f"{path} must define a mapping")
+            return data
+
+    def __call__(self) -> Dict[str, Any]:
+        base_dir = Path(__file__).resolve().parent
+        env_yaml = base_dir / "env.yaml"
+        env_data = self._load_yaml(env_yaml)
+        env_name = os.getenv("PPT_ENV", env_data.get("env", "dev"))
+        config_yaml = base_dir / f"{env_name}.yaml"
+        config_data = self._load_yaml(config_yaml)
+        merged = _deep_merge(env_data, config_data)
+        merged["env"] = env_name
+        return merged
+
+    def get_field_value(self, field: Any, field_name: str) -> Any:
+        data = self.__call__()
+        return data.get(field_name)
+
+    def prepare_field_value(self, field_name: str, field: Any, value: Any, value_is_complex: bool) -> Any:
+        return value
 
 
 class ModuleSettings(BaseModel):
@@ -134,6 +170,7 @@ class AppSettings(BaseSettings):
     @classmethod
     def settings_customise_sources(
         cls,
+        settings_cls,
         init_settings,
         env_settings,
         dotenv_settings,
@@ -143,31 +180,9 @@ class AppSettings(BaseSettings):
             init_settings,
             env_settings,
             dotenv_settings,
-            cls.yaml_config_settings_source,
+            YamlConfigSettingsSource(settings_cls),
             file_secret_settings,
         )
-
-    @classmethod
-    def yaml_config_settings_source(cls, _: BaseSettings) -> Dict[str, Any]:
-        base_dir = Path(__file__).resolve().parent
-        env_yaml = base_dir / "env.yaml"
-        env_data = cls._load_yaml(env_yaml)
-        env_name = os.getenv("PPT_ENV", env_data.get("env", "dev"))
-        config_yaml = base_dir / f"{env_name}.yaml"
-        config_data = cls._load_yaml(config_yaml)
-        merged = _deep_merge(env_data, config_data)
-        merged["env"] = env_name
-        return merged
-
-    @staticmethod
-    def _load_yaml(path: Path) -> Dict[str, Any]:
-        if not path.exists():
-            return {}
-        with path.open("r", encoding="utf-8") as fh:
-            data = yaml.safe_load(fh) or {}
-            if not isinstance(data, dict):
-                raise ValueError(f"{path} must define a mapping")
-            return data
 
 
 settings = AppSettings()

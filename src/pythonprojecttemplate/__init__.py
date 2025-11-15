@@ -6,6 +6,6 @@ pythonProjectTemplate 主包
 
 from .config.config import config
 from .log.logHelper import get_logger
-from .api.main import create_app
+from .api.main import create_application
 
-__all__ = ["config", "get_logger", "create_app"]
+__all__ = ["config", "get_logger", "create_application"]
