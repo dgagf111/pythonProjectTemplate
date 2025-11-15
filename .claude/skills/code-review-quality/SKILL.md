@@ -1,172 +1,172 @@
 ---
-name: code-review-quality
-description: Conduct context-driven code reviews focusing on quality, testability, and maintainability. Use when reviewing code, providing feedback, or establishing review practices.
----
 
-# Code Review Quality
+## name: code-review-quality
 
-## Core Philosophy
+description: 进行以上下文为导向的代码审查，重点关注质量、可测试性和可维护性。用于代码审查、提供反馈或建立审查实践时。
 
-Code review is about learning, teaching, and improving quality - not gatekeeping or showing off. Be constructive, be specific, be kind.
+# 代码审查质量
 
-**Key principle:** Review code like you're helping a colleague, not judging them.
+## 核心理念
 
-## The Code Review Mindset
+代码审查的目的是**学习、教学和提升质量**——而不是设限或炫技。  
+要有建设性、具体且友善。
 
-### What You're Looking For
+**关键原则：** 像是在帮助同事一样审查代码，而不是在评判他们。
 
-**Must address:**
+## 代码审查思维模式
 
-- Bugs and logic errors
-- Security vulnerabilities
-- Performance issues
-- Breaking changes
+### 你需要关注的内容
 
-**Should address:**
+**必须解决：**
 
-- Unclear naming
-- Missing tests
-- Duplicated code
-- Complex logic
+- Bug 和逻辑错误
+- 安全漏洞
+- 性能问题
+- 破坏性变更
 
-**Nice to have:**
+**应当关注：**
 
-- Style inconsistencies (if not auto-fixable)
-- Minor optimizations
-- Suggestions for improvement
+- 命名不清
+- 缺失测试
+- 重复代码
+- 复杂逻辑
 
-**Not your job:**
+**可选关注：**
 
-- Enforcing personal preferences
-- Rewriting in your style
-- Nitpicking formatting (use linter)
+- 样式不一致（若无法自动修复）
+- 小幅优化
+- 改进建议
 
-### Questions to Ask Yourself
+**不属于职责范围：**
 
-**Is this a problem or a preference?**
+- 强制执行个人偏好
+- 用你自己的风格重写
+- 挑剔格式（交给 linter 处理）
 
-- Problem: Will cause bugs, confuse future maintainers
-- Preference: "I would have done it differently"
+### 你需要问自己的问题
 
-**Is this blocking or non-blocking?**
+**这是问题还是偏好？**
 
-- Blocking: Must fix before merge
-- Non-blocking: Suggestion for future improvement
+- 问题：会导致 bug，或让未来维护者困惑
+- 偏好：“我会用另一种方式写”
 
-**Am I teaching or judging?**
+**这是阻塞还是非阻塞？**
 
-- Teaching: "Here's why this could be better"
-- Judging: "This is wrong"
+- 阻塞：必须在合并前修复
+- 非阻塞：未来改进建议
 
-## Feedback Levels
+**我是教学还是评判？**
 
-Use these prefixes to indicate severity:
+- 教学：“这是为什么这样会更好”
+- 评判：“这不对”
 
-**🔴 BLOCKER** - Must fix before merging
+## 反馈级别
 
-```
-🔴 This function has SQL injection vulnerability.
-Use parameterized queries instead.
-```
+使用以下前缀表示严重程度：
 
-**🟡 MAJOR** - Should fix, but not necessarily blocking
+**🔴 阻塞问题（BLOCKER）** - 合并前必须修复
 
 ```
-🟡 This test doesn't actually verify the error handling.
-Consider adding assertion for error message.
+🔴 此函数存在 SQL 注入漏洞。
+请改用参数化查询。
 ```
 
-**🟢 MINOR** - Nice to have, optional
+**🟡 主要问题（MAJOR）** - 应修复，但不一定阻塞
 
 ```
-🟢 Consider extracting this into a separate function
-for better readability (optional).
+🟡 此测试未验证错误处理。
+请考虑添加错误消息断言。
 ```
 
-**💡 SUGGESTION** - Ideas for improvement
+**🟢 次要问题（MINOR）** - 可选优化
 
 ```
-💡 For future consideration: We could cache this
-result to improve performance.
+🟢 建议将此提取为单独函数以提高可读性（可选）。
 ```
 
-## The Review Process
+**💡 建议（SUGGESTION）** - 改进思路
 
-### 1. Understand the Context
+```
+💡 未来可以考虑缓存此结果以提升性能。
+```
 
-**Before reviewing code, check:**
+## 审查流程
 
-- PR description - What problem does this solve?
-- Linked issues/tickets - Why is this needed?
-- Related PRs - Is this part of larger change?
+### 1. 理解上下文
 
-**Bad start:** Jump straight to code and criticize
-**Good start:** Understand what they're trying to accomplish
+**在审查代码前，先检查：**
 
-### 2. Review at Different Levels
+- PR 描述 —— 解决了什么问题？
+- 关联的 issue / ticket —— 为什么需要？
+- 相关 PR —— 是否属于更大变更的一部分？
 
-**High-level (5 min):**
+**错误示范：** 直接看代码并开始批评  
+**正确示范：** 先理解开发者想实现什么
 
-- Does approach make sense?
-- Are there architectural concerns?
-- Does it fit with existing patterns?
+### 2. 分层次进行审查
 
-**Detail-level (15-30 min):**
+**高层级（5 分钟）：**
 
-- Logic correctness
-- Edge cases handled?
-- Error handling adequate?
-- Tests sufficient?
+- 方法合理吗？
+- 是否有架构问题？
+- 是否符合既有模式？
 
-**Micro-level (5 min):**
+**细节层级（15–30 分钟）：**
 
-- Naming clear?
-- Code readable?
-- Comments where needed?
+- 逻辑是否正确
+- 边界情况是否处理
+- 错误处理是否充分
+- 测试是否完备
 
-### 3. Look for Common Issues
+**微观层级（5 分钟）：**
 
-**Logic Errors**
+- 命名是否清晰
+- 代码是否可读
+- 必要注释是否到位
+
+### 3. 常见问题
+
+**逻辑错误**
 
 ```javascript
-// 🔴 BLOCKER: Logic error
+// 🔴 阻塞：逻辑错误
 if (price > 100 && price < 50) {
-  // Impossible condition
+  // 不可能的条件
   applyDiscount();
 }
 
-// Should be:
+// 应为：
 if (price > 100 || (price >= 50 && price <= 100)) {
   applyDiscount();
 }
 ```
 
-**Null/Undefined Handling**
+**Null / Undefined 处理**
 
 ```javascript
-// 🟡 MAJOR: Possible null reference
+// 🟡 主要：可能出现 null 引用
 function calculateTotal(order) {
-  return order.items.reduce(...); // What if order.items is null?
+  return order.items.reduce(...); // 若 order.items 为 null？
 }
 
-// Suggestion:
+// 建议：
 function calculateTotal(order) {
   if (!order?.items?.length) return 0;
   return order.items.reduce(...);
 }
 ```
 
-**Race Conditions**
+**竞争条件**
 
 ```javascript
-// 🔴 BLOCKER: Race condition
+// 🔴 阻塞：竞态问题
 async function updateInventory(productId, quantity) {
   const product = await db.products.findById(productId);
-  product.stock -= quantity; // Not atomic!
+  product.stock -= quantity; // 非原子操作！
   await product.save();
 }
 
-// Suggestion:
+// 建议：
 async function updateInventory(productId, quantity) {
   await db.products.updateOne(
     { _id: productId, stock: { $gte: quantity } },
@@ -175,174 +175,165 @@ async function updateInventory(productId, quantity) {
 }
 ```
 
-**Missing Tests**
+**缺少测试**
 
 ```javascript
-// 🟡 MAJOR: Missing test coverage
+// 🟡 主要：测试覆盖不足
 function calculateDiscount(price, customerType) {
-  // Complex business logic
-  // ...
+  // 复杂业务逻辑
 }
 
-// No tests provided. Should test:
-// - Different customer types
-// - Edge cases (price = 0, negative)
-// - Boundary values
+// 应测试：
+// - 不同客户类型
+// - 边界值（price=0, 负值）
+// - 临界区间
 ```
 
-**Security Issues**
+**安全问题**
 
 ```javascript
-// 🔴 BLOCKER: SQL injection vulnerability
+// 🔴 阻塞：SQL 注入漏洞
 const query = `SELECT * FROM users WHERE email = '${email}'`;
 
-// Use parameterized query:
+// 改用参数化查询：
 const query = "SELECT * FROM users WHERE email = ?";
 db.query(query, [email]);
 ```
 
-## Writing Good Review Comments
+## 撰写优秀的审查评论
 
-### Be Specific
+### 要具体
 
-**Bad:**
-
-```
-This function is too long.
-```
-
-**Good:**
+**错误示例：**
 
 ```
-🟡 This function has 4 distinct responsibilities:
-1. Validation
-2. Calculation
-3. Database save
-4. Email sending
+这个函数太长。
+```
 
-Consider extracting into separate functions for easier testing:
+**正确示例：**
+
+```
+🟡 此函数承担了 4 个不同职责：
+1. 校验
+2. 计算
+3. 数据库存储
+4. 发送邮件
+
+建议拆分为独立函数：
 - validateOrder()
 - calculateTotal()
 - saveOrder()
 - sendConfirmation()
 ```
 
-### Explain Why
+### 解释原因
 
-**Bad:**
-
-```
-Don't use var.
-```
-
-**Good:**
+**错误示例：**
 
 ```
-🟢 Consider using `const` or `let` instead of `var`.
-`var` has function scope which can lead to unexpected
-behavior with closures. `const`/`let` have block scope
-which is more predictable.
+不要用 var。
 ```
 
-### Suggest Solutions
-
-**Bad:**
+**正确示例：**
 
 ```
-This won't work.
+🟢 建议使用 const 或 let 替代 var。
+var 具有函数作用域，可能导致闭包中的意外行为；
+const / let 具有块级作用域，更可预测。
 ```
 
-**Good:**
+### 提出解决方案
+
+**错误示例：**
 
 ```
-🔴 This will fail when items array is empty.
+这样不行。
+```
 
-Suggested fix:
+**正确示例：**
+
+```
+🔴 当 items 数组为空时会失败。
+
+建议修复：
 if (!items || items.length === 0) {
   return 0;
 }
 ```
 
-### Ask Questions
+### 提问方式
 
-**Accusatory:**
-
-```
-Why did you do it this way?
-```
-
-**Curious:**
+**指责式：**
 
 ```
-💡 I'm curious about the approach here. Have you
-considered using X pattern? It might simplify
-the error handling. What do you think?
+你为什么要这么写？
 ```
 
-### Praise Good Work
-
-**Don't just criticize, also highlight good things:**
+**好奇式：**
 
 ```
-✅ Nice use of early returns to avoid nested conditionals.
-This is much more readable than the previous version!
+💡 想了解你在这里的思路。是否考虑过使用 X 模式？
+它可能简化错误处理。你怎么看？
+```
+
+### 表扬优秀工作
+
+```
+✅ 很好地使用了早返回，避免嵌套条件，代码更清晰！
 ```
 
 ```
-✅ Great test coverage on the edge cases. The negative
-price test is especially important.
+✅ 测试覆盖面很全面，特别是负价格测试非常关键。
 ```
 
-## The Comment Template
+## 评论模板
 
 ````markdown
-🔴/🟡/🟢/💡 [Brief description of issue]
+🔴/🟡/🟢/💡 [问题简述]
 
-**Current code:**
+**当前代码：**
 
 ```[language]
-[code snippet]
+[代码片段]
 ```
 ````
 
-**Issue:**
-[Explain what's wrong and why it matters]
+**问题说明：**  
+[解释错误及其影响]
 
-**Suggested fix:**
+**建议修复：**
 
 ```[language]
-[code snippet with solution]
+[解决方案示例]
 ```
 
-**Alternative:**
-[If applicable, mention other approaches]
+**其他方案：**  
+[如有，可补充]
 
 ````
 
-### Example Using Template
+### 模板示例
 
 ```markdown
-🔴 SQL injection vulnerability in user search
+🔴 用户搜索存在 SQL 注入漏洞
 
-**Current code:**
+**当前代码：**
 ```javascript
 const query = `SELECT * FROM users WHERE name LIKE '%${searchTerm}%'`;
 const results = await db.query(query);
 ````
 
-**Issue:**
-User input is directly interpolated into SQL query. An attacker
-could inject SQL code (e.g., searchTerm = "'; DROP TABLE users--")
+**问题：**  
+用户输入被直接拼接进 SQL 查询，攻击者可注入恶意语句。
 
-**Suggested fix:**
+**建议修复：**
 
 ```javascript
 const query = "SELECT * FROM users WHERE name LIKE ?";
 const results = await db.query(query, [`%${searchTerm}%`]);
 ```
 
-**Alternative:**
-If using an ORM:
+**替代方案（使用 ORM）：**
 
 ```javascript
 const results = await User.findAll({
@@ -354,302 +345,256 @@ const results = await User.findAll({
 
 ```
 
-## What NOT to Review
+## 不要审查的内容（应自动化）
 
-### Don't Review (Automate Instead)
+**格式：**
+- 缩进、空格、换行
+  **解决方案：** 使用 Prettier、ESLint auto-fix
 
-**Formatting**
-- Indentation, spacing, line breaks
-- **Solution:** Use Prettier, ESLint with auto-fix
+**代码风格：**
+- 分号、引号、命名约定
+  **解决方案：** ESLint + CI 检查
 
-**Code Style**
-- Semicolons, quotes, naming conventions
-- **Solution:** ESLint, style guide enforced in CI
+**导入顺序：**
+- 哪个 import 先后
+  **解决方案：** ESLint import 插件
 
-**Import Order**
-- Which imports come first
-- **Solution:** ESLint plugin for imports
+**类型错误：**
+- TypeScript 编译错误
+  **解决方案：** 在 CI 执行 TypeScript 检查
 
-**Type Errors**
-- TypeScript compile errors
-- **Solution:** TypeScript in CI
+### 人工审查应聚焦于
 
-### Focus Human Review On
+- 逻辑正确性
+- 业务逻辑实现
+- 测试质量与覆盖
+- 安全性
+- 性能
+- API 设计
+- 错误处理
+- 边界情况
 
-- Logic correctness
-- Business logic implementation
-- Test quality and coverage
-- Security concerns
-- Performance issues
-- API design
-- Error handling
-- Edge cases
+## 审查检查清单
 
-## Review Checklist
+### 功能性
+- [ ] 代码是否实现了 PR 描述的功能？
+- [ ] 是否处理了边界情况？
+- [ ] 错误处理是否合理？
+- [ ] 非法输入会怎样？
 
-### Functionality
-- [ ] Does code do what PR says it does?
-- [ ] Are edge cases handled?
-- [ ] Is error handling adequate?
-- [ ] What happens with invalid input?
+### 测试
+- [ ] 是否有测试？
+- [ ] 测试是否真正验证逻辑？
+- [ ] 边界/错误情况是否测试？
+- [ ] 测试可理解？
 
-### Tests
-- [ ] Are there tests?
-- [ ] Do tests actually test the logic?
-- [ ] Are edge cases tested?
-- [ ] Are error cases tested?
-- [ ] Can I understand what's being tested?
+### 安全
+- [ ] 输入验证？
+- [ ] 防止 SQL 注入？
+- [ ] 防止 XSS？
+- [ ] 授权检查？
+- [ ] 未硬编码机密？
 
-### Security
-- [ ] Input validation present?
-- [ ] SQL injection prevented?
-- [ ] XSS prevented?
-- [ ] Authorization checks in place?
-- [ ] Secrets not hardcoded?
+### 性能
+- [ ] 无明显性能问题？
+- [ ] 数据库查询优化？
+- [ ] 无 N+1 查询？
+- [ ] 适当使用缓存？
 
-### Performance
-- [ ] No obvious performance issues?
-- [ ] Database queries optimized?
-- [ ] No N+1 queries?
-- [ ] Appropriate use of caching?
+### 可维护性
+- [ ] 代码可读？
+- [ ] 命名清晰？
+- [ ] 复杂逻辑有注释？
+- [ ] 无重复？
+- [ ] 遵循现有模式？
 
-### Maintainability
-- [ ] Code is readable?
-- [ ] Naming is clear?
-- [ ] Complex logic is commented?
-- [ ] No obvious duplication?
-- [ ] Follows existing patterns?
+### 文档
+- [ ] 公共 API 是否文档化？
+- [ ] 复杂逻辑解释？
+- [ ] README 是否更新？
 
-### Documentation
-- [ ] Public API documented?
-- [ ] Complex logic explained?
-- [ ] README updated if needed?
+## 处理分歧
 
-## Handling Disagreements
+### 当作者不同意你的反馈
 
-### When Author Disagrees with Your Feedback
-
-**Your comment:**
-```
-
-🟡 Consider extracting this into a separate function.
+**你的评论：**
 
 ```
 
-**Their response:**
-```
-
-I don't think that's necessary. The function is fine as is.
+🟡 建议提取为独立函数。
 
 ```
 
-**Your options:**
-
-**If non-blocking (🟢💡):**
-```
-
-Fair enough! It's a stylistic preference. Feel free to leave as is.
+**他们的回应：**
 
 ```
 
-**If important (🟡):**
-```
-
-I understand your perspective. My concern is that this
-function currently handles 4 different responsibilities,
-which makes it harder to test in isolation. Would you be
-open to extracting just the calculation logic?
+我觉得没必要，函数这样挺好。
 
 ```
 
-**If critical (🔴):**
-```
+**你的选择：**
 
-I appreciate you're trying to keep it simple, but this
-is a security vulnerability. We need to fix this before
-merging. Let's discuss the best approach - happy to pair
-on it if helpful.
+- **若非阻塞（🟢💡）**
 
 ```
 
-### When You're Wrong
-
-**Happens to everyone. Be gracious:**
-```
-
-You're absolutely right - I missed that this is handled
-in the middleware layer. Thanks for clarifying!
-Resolving this comment.
+可以理解！这是风格问题，可保留。
 
 ```
 
-## Review Timing
-
-### How Long Should Review Take?
-
-**Small PR (<100 lines):** 10-15 minutes
-**Medium PR (100-500 lines):** 30-45 minutes
-**Large PR (>500 lines):** 1-2 hours (or ask to split)
-
-### When to Request Changes
-
-**Immediately:** Critical bugs, security issues
-**Within 4 hours:** Normal business hours, blocking work
-**Within 24 hours:** Non-urgent, non-blocking
-
-### When PR is Too Large
+- **若重要（🟡）**
 
 ```
 
-This PR is quite large (847 lines). Would you consider
-splitting into smaller PRs? It's hard to review thoroughly
-in one go, and increases risk of missing issues.
+理解你的看法，但此函数目前承担四种职责，  
+单测困难。是否愿意仅提取计算逻辑？
 
-Suggested splits:
+```
 
-1. Database schema changes
-2. API endpoints
-3. Frontend components
-4. Tests
+- **若关键（🔴）**
 
-Happy to prioritize reviewing the first chunk today!
+```
+
+理解想保持简洁，但这是安全漏洞。  
+必须在合并前修复。我们可以一起讨论解决方案。
+
+```
+
+### 当你错了
+
+**要优雅承认：**
+
+```
+
+你说得对——我忽略了中间件层的逻辑。  
+谢谢澄清！我将关闭此评论。
+
+```
+
+## 审查时长
+
+**小型 PR（<100 行）**：10–15 分钟
+**中型 PR（100–500 行）**：30–45 分钟
+**大型 PR（>500 行）**：1–2 小时（建议拆分）
+
+### 何时请求修改
+
+- **立即：** 严重 bug、安全问题
+- **4 小时内：** 阻塞工作
+- **24 小时内：** 非紧急改进
+
+### 当 PR 过大
+
+```
+
+此 PR（847 行）过大，建议拆分为：
+
+1. 数据库 schema
+2. API 接口
+3. 前端组件
+4. 测试
+
+可优先审查第一个部分。
 
 ````
 
-## Common Review Smells
+## 常见不良审查
 
-### Unhelpful Reviews
+**❌ 仅写“LGTM”** —— 无实际审查
+**❌ 吹毛求疵** —— 只挑格式不看逻辑
+**❌ 强行重写** —— “我会这么写”但原实现没问题
+**❌ 要求完美** —— 小问题却要求重写模块
+**❌ 守门人心态** —— 无意义阻塞
 
-**❌ Just "LGTM"**
-- Not helpful unless you actually reviewed thoroughly
+### 优秀审查
 
-**❌ Nitpicking**
-- 20 comments about spacing and naming
-- 0 comments about logic
+**✅ 建设性反馈**
+**✅ 赞美 + 改进建议**
+**✅ 教学机会**
+**✅ 聚焦影响**
+**✅ 及时响应**
 
-**❌ Rewriting in Your Style**
-- "I would do it this way" (but their way works fine)
+## 审查示例
 
-**❌ Demanding Perfection**
-- "Rewrite this entire module"
-- (When minor improvements would suffice)
-
-**❌ Being a Gatekeeper**
-- Blocking PRs unnecessarily
-- Making approval feel like pulling teeth
-
-### Helpful Reviews
-
-**✅ Constructive Feedback**
-- Specific, actionable, explained
-
-**✅ Praise + Improvements**
-- Highlight good work
-- Suggest improvements where needed
-
-**✅ Teaching Moments**
-- Explain why, not just what
-- Share knowledge and context
-
-**✅ Focus on Impact**
-- Prioritize important issues
-- Let minor things go
-
-**✅ Timely Response**
-- Review within reasonable time
-- Don't block progress unnecessarily
-
-## Example Reviews
-
-### Excellent Review Comment
+### 优秀评论
 
 ```markdown
-🔴 Memory leak in event handler
+🔴 事件处理存在内存泄漏
 
-**Current code:**
+**当前代码：**
 ```javascript
 useEffect(() => {
   window.addEventListener('resize', handleResize);
 }, []);
 ````
 
-**Issue:**
-Event listener is registered but never cleaned up. On component
-unmount, the listener remains active, causing a memory leak.
-This will accumulate if component mounts/unmounts frequently.
+**问题：**  
+事件监听器未清理，组件卸载后仍保留。频繁挂载会造成内存泄漏。
 
-**Suggested fix:**
+**建议修复：**
 
 ```javascript
 useEffect(() => {
   window.addEventListener("resize", handleResize);
-
   return () => {
     window.removeEventListener("resize", handleResize);
   };
 }, []);
 ```
 
-The return function acts as cleanup, removing the listener when
-component unmounts.
-
-**Further reading:**
-React docs on cleanup: https://react.dev/learn/synchronizing-with-effects#step-3-add-cleanup-if-needed
+**参考：**  
+React 文档：[https://react.dev/learn/synchronizing-with-effects#step-3-add-cleanup-if-needed](https://react.dev/learn/synchronizing-with-effects#step-3-add-cleanup-if-needed)
 
 ````
 
-### Poor Review Comment
+### 糟糕评论
 
 ```markdown
-This is bad. Rewrite it.
+这很糟，重写。
 ````
 
-**Problems:**
+**问题：**
 
-- Not specific
-- No explanation
-- No suggestion
-- Unhelpful tone
+- 不具体
+- 无解释
+- 无建议
+- 语气不好
 
-## Reviewing Your Own Code
+## 自我审查
 
-Before requesting review:
+在请求他人审查前：
 
-### Self-Review Checklist
+### 自查清单
 
-- [ ] Read through entire diff
-- [ ] Remove debug code, console.logs
-- [ ] Check for commented-out code
-- [ ] Verify tests pass locally
-- [ ] Update documentation if needed
-- [ ] Write clear PR description
-- [ ] Add screenshots/videos if UI change
-- [ ] Link related issues
+- 通读整个 diff
+- 移除调试代码
+- 删除注释掉的旧代码
+- 本地通过测试
+- 更新文档
+- PR 描述清晰
+- UI 改动附截图
+- 关联相关 issue
 
-### Pre-Review Your Own Comments
+### 添加自我说明
 
-Add comments explaining:
-
-- Non-obvious decisions
-- Workarounds and why
-- Areas you're unsure about
-- Questions for reviewers
+- 解释不明显的决策
+- 临时解决方案及原因
+- 不确定区域
+- 向审查者提问
 
 ```javascript
-// NOTE: Using setTimeout here instead of requestAnimationFrame
-// because we need this to run after React's commit phase.
-// Tried RAF but it caused flicker on initial render.
+// NOTE: 使用 setTimeout 而非 requestAnimationFrame，
+// 因需在 React commit 阶段后执行。
+// RAF 会在首次渲染时闪烁。
 setTimeout(() => scrollToElement(ref.current), 0);
 ```
 
-## Using with QE Agents
+## 与 QE Agent 协作
 
-### Automated Code Review with qe-quality-analyzer
-
-**qe-quality-analyzer** performs intelligent code review:
+### 自动化代码审查（qe-quality-analyzer）
 
 ```typescript
-// Agent analyzes PR for quality issues
 const reviewAnalysis = await agent.reviewCode({
   files: prChanges,
   depth: "comprehensive",
@@ -659,39 +604,37 @@ const reviewAnalysis = await agent.reviewCode({
   checkMaintainability: true,
 });
 
-// Returns categorized feedback
+// 返回结果示例：
 // {
-//   blockers: [{ file, line, issue, severity: 'BLOCKER' }],
-//   major: [{ file, line, issue, severity: 'MAJOR' }],
-//   suggestions: [{ file, line, suggestion, severity: 'MINOR' }],
+//   blockers: [...],
+//   major: [...],
+//   suggestions: [...],
 //   qualityScore: 0.87
 // }
 ```
 
-### Human-Agent Collaborative Review
+### 人机协同审查
 
 ```typescript
-// Agent does first-pass review, human refines
 const agentReview = (await qe) - quality - analyzer.reviewCode(prChanges);
 const humanRefinements = await human.refineReview(agentReview);
 const finalReview = await agent.formatFeedback({
   agentFindings: agentReview,
   humanInsights: humanRefinements,
-  useEmojis: true, // 🔴 🟡 🟢 💡
+  useEmojis: true,
 });
 ```
 
-### Fleet Coordination for Comprehensive Review
+### 多代理协作审查
 
 ```typescript
-// Multiple agents review different aspects
 const reviewFleet = await FleetManager.coordinate({
   strategy: "code-review",
   agents: [
-    "qe-quality-analyzer", // Overall quality
-    "qe-security-scanner", // Security vulnerabilities
-    "qe-performance-tester", // Performance implications
-    "qe-coverage-analyzer", // Test coverage impact
+    "qe-quality-analyzer",
+    "qe-security-scanner",
+    "qe-performance-tester",
+    "qe-coverage-analyzer",
   ],
   topology: "parallel",
 });
@@ -702,16 +645,18 @@ await reviewFleet.execute({
 });
 ```
 
-## Remember
+## 请记住
 
-**Good code review is:**
+**优秀的代码审查是：**
 
-- Collaborative, not adversarial
-- Teaching, not judging
-- Specific, not vague
-- Constructive, not destructive
-- Timely, not delayed
+- 协作而非对立
+- 教学而非评判
+- 具体而非模糊
+- 建设而非破坏
+- 及时而非拖延
 
-**The goal is better code and better developers, not perfect code.**
+**目标是：更好的代码 + 更好的开发者，而非完美的代码。**
 
-Review with empathy. Everyone writes imperfect code sometimes. Your job is to help make it better, not to prove how smart you are.
+以共情之心审查代码。  
+每个人都会写出不完美的代码，  
+你的职责是让它变得更好，而不是证明自己更聪明。
