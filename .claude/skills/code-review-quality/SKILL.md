@@ -702,28 +702,6 @@ await reviewFleet.execute({
 });
 ```
 
----
-
-## Related Skills
-
-**Core Quality Practices:**
-
-- [agentic-quality-engineering](../agentic-quality-engineering/) - Agent-driven quality workflows
-- [holistic-testing-pact](../holistic-testing-pact/) - Quality across all test quadrants
-
-**Development Practices:**
-
-- [refactoring-patterns](../refactoring-patterns/) - Code improvements post-review
-- [tdd-london-chicago](../tdd-london-chicago/) - Test-driven development practices
-- [xp-practices](../xp-practices/) - Pair programming and ensemble coding
-
-**Communication:**
-
-- [bug-reporting-excellence](../bug-reporting-excellence/) - Report issues found in reviews
-- [technical-writing](../technical-writing/) - Document review processes
-
----
-
 ## Remember
 
 **Good code review is:**
