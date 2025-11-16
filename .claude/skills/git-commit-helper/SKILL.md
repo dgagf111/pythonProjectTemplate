@@ -1,21 +1,36 @@
 ---
-name: Git 提交助手
+name: git-commit-helper
 
-description: git-commit-helper，通过分析 git diff 来生成描述性的提交信息。当用户请求帮助编写提交信息或审查已暂存更改时使用。使用中文生成提交信息并提交代码。
+description: 分析 git diff 生成 Conventional Commits 格式的中文提交信息。当需要编写提交信息、审查暂存更改或自动化 commit 时使用。支持 Git 操作、提交信息生成和代码提交。
+
+allowed-tools: Bash, Read, Write
 ---
 
 # Git 提交助手
 
+智能分析 Git 更改并生成符合 Conventional Commits 规范的中文提交信息。
+
 ## 快速开始
 
-分析已暂存的更改并生成提交信息：
+### 方式 1: 交互式提交助手
+```bash
+# 运行自动化提交脚本
+./scripts/commit-helper.sh
+```
 
+### 方式 2: 手动分析提交
 ```bash
 # 查看已暂存的更改
 git diff --staged
 
-# 根据更改生成提交信息
-# （Claude 将分析 diff 并建议一条提交信息）
+# Claude 将根据 diff 内容建议合适的提交信息
+```
+
+### 方式 3: 一键提交
+```bash
+# 暂存所有更改并提交
+git add .
+git commit -m "feat(scope): 描述性提交信息"
 ```
 
 ## 提交信息格式
@@ -216,6 +231,47 @@ git commit --amend --no-edit
 - [ ] 作用域具体且明确
 - [ ] 摘要不超过 50 个字符
 - [ ] 摘要使用祈使语气
-- [ ] 正文解释“为什么”而不仅是“做了什么”
+- [ ] 正文解释"为什么"而不仅是"做了什么"
 - [ ] 明确标注重大变更
 - [ ] 包含相关 issue 编号
+
+## 辅助工具
+
+### 交互式提交脚本
+使用 [`scripts/commit-helper.sh`](scripts/commit-helper.sh) 进行智能提交：
+
+```bash
+# 给脚本执行权限（首次使用）
+chmod +x scripts/commit-helper.sh
+
+# 运行交互式提交助手
+./scripts/commit-helper.sh
+```
+
+**脚本功能：**
+- 自动检测暂存的更改
+- 分析文件类型和更改统计
+- 建议合适的提交类型
+- 交互式生成符合规范的提交信息
+- 支持详细描述和多行提交信息
+
+### 更多示例
+查看 [`examples.md`](examples.md) 获取：
+- 实际项目提交示例
+- 批量提交策略
+- 高级用法技巧
+- 常见问题处理
+
+### 快速别名设置
+在 `.bashrc` 或 `.zshrc` 中添加：
+```bash
+# Git 提交助手别名
+alias gcommit="./scripts/commit-helper.sh"
+alias gst="git status"
+alias gadd="git add ."
+
+# 使用方式：
+# gadd    # 暂存所有更改
+# gst     # 查看状态
+# gcommit # 运行提交助手
+```
