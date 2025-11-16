@@ -22,10 +22,10 @@ from typing import Dict, Any
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
-    from pythonprojecttemplate.utils.encrypt import aes_encrypt, md5_encrypt, sha_256_encrypt
+    from pythonprojecttemplate.utils.encrypt import aes_encrypt, bcrypt_hash, sha_256_encrypt
     from pythonprojecttemplate.utils.excel import excel_utils
     from pythonprojecttemplate.utils.http import http_util
-    
+
 except ImportError as e:
     print(f"❌ 导入错误: {e}")
     print("请确保在项目根目录下运行此测试")
@@ -58,7 +58,7 @@ class UtilsModuleTestSuite:
         test_methods = [
             ('RSA加密工具', self.test_rsa_encryption),
             ('AES加密工具', self.test_aes_encryption),
-            ('MD5哈希工具', self.test_md5_hash),
+            ('Bcrypt哈希工具', self.test_bcrypt_hash),
             ('SHA哈希工具', self.test_sha_hash),
             ('Excel处理工具', self.test_excel_utils),
             ('HTTP请求工具', self.test_http_utils)
@@ -128,21 +128,32 @@ class UtilsModuleTestSuite:
         
         print("  ✓ AES加密工具测试完成")
     
-    def test_md5_hash(self):
-        """测试MD5哈希工具"""
-        print("  🔍 测试MD5哈希功能...")
-        
+    def test_bcrypt_hash(self):
+        """测试Bcrypt密码哈希工具"""
+        print("  🔍 测试Bcrypt哈希功能...")
+
         try:
-            # 检查MD5工具是否可用
-            if hasattr(md5_encrypt, 'encrypt'):
-                print("  ✓ MD5哈希功能可用")
+            # 检查bcrypt工具是否可用
+            if hasattr(bcrypt_hash, 'hash_password') and hasattr(bcrypt_hash, 'verify_password'):
+                print("  ✓ Bcrypt密码哈希功能可用")
+
+                # 测试bcrypt基本功能
+                test_password = "TestPassword123!"
+                hashed = bcrypt_hash.hash_password(test_password)
+                is_valid = bcrypt_hash.verify_password(test_password, hashed)
+
+                if is_valid:
+                    print("  ✓ Bcrypt密码哈希和验证测试通过")
+                else:
+                    print("  ⚠️  Bcrypt密码验证失败")
+
             else:
-                print("  ⚠️  MD5工具功能不完整")
-                
+                print("  ⚠️  Bcrypt工具功能不完整")
+
         except Exception as e:
-            print(f"  ⚠️  MD5哈希测试跳过: {e}")
-        
-        print("  ✓ MD5哈希工具测试完成")
+            print(f"  ⚠️  Bcrypt哈希测试跳过: {e}")
+
+        print("  ✓ Bcrypt哈希工具测试完成")
     
     def test_sha_hash(self):
         """测试SHA哈希工具"""

@@ -1,6 +1,6 @@
 ---
 
-## name: code-review-quality
+name: code-review-quality
 
 description: 进行以上下文为导向的代码审查，重点关注质量、可测试性和可维护性。用于代码审查、提供反馈或建立审查实践时。
 

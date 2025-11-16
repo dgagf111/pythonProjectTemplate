@@ -101,14 +101,22 @@ is_valid = rsa_encrypt.verify("message", signature, public_key)
 
 ### 哈希算法
 
-#### MD5哈希
+#### bcrypt密码哈希
 
 ```python
-from pythonprojecttemplate.utils.encrypt import md5_encrypt
+from pythonprojecttemplate.utils.encrypt import bcrypt_hash
 
-# MD5哈希
-hash_value = md5_encrypt.encrypt("input_string")
-print(f"MD5: {hash_value}")
+# 密码哈希
+hashed = bcrypt_hash.hash_password("my_password")
+print(f"哈希值: {hashed}")
+
+# 验证密码
+is_valid = bcrypt_hash.verify_password("my_password", hashed)
+print(f"验证结果: {'成功' if is_valid else '失败'}")
+
+# 检查是否需要重新哈希
+if bcrypt_hash.needs_rehash(hashed):
+    print("建议升级密码哈希")
 ```
 
 #### SHA256哈希
@@ -125,8 +133,8 @@ print(f"SHA256: {hash_value}")
 
 | 算法 | 长度 | 安全性 | 性能 | 推荐使用 |
 |------|------|--------|------|----------|
-| MD5 | 128位 | 较低 | 高 | 校验和、非安全场景 |
-| SHA256 | 256位 | 高 | 中等 | 安全哈希、密码存储 |
+| bcrypt | 变长 | 极高 | 低 | 密码存储、用户认证 |
+| SHA256 | 256位 | 高 | 中等 | 安全哈希、数据完整性 |
 
 ## 📊 Excel处理工具
 
@@ -371,42 +379,44 @@ except http_util.ConnectionError:
 ### 综合示例：数据处理管道
 
 ```python
-from pythonprojecttemplate.utils.encrypt import aes_encrypt, md5_encrypt
+from pythonprojecttemplate.utils.encrypt import aes_encrypt, bcrypt_hash
 from pythonprojecttemplate.utils.excel import excel_utils
 from pythonprojecttemplate.utils.http import http_util
 import json
 
 def process_data_pipeline():
     """完整的数据处理管道示例"""
-    
+
     # 1. 从API获取数据
     print("📥 获取数据...")
     response = http_util.get(
         "https://api.example.com/data",
         headers={'Authorization': 'Bearer your-token'}
     )
-    
+
     if response.status_code == 200:
         raw_data = response.json()
-        
-        # 2. 数据加密
+
+        # 2. 数据加密和哈希
         print("🔐 加密敏感数据...")
         for record in raw_data:
             if 'email' in record:
-                record['email_hash'] = md5_encrypt.encrypt(record['email'])
+                # 使用bcrypt哈希邮箱（用于索引和比较，不存储明文）
+                record['email_hash'] = bcrypt_hash.hash_password(record['email'])
+                # 使用AES加密邮箱（需要时解密）
                 record['email_encrypted'] = aes_encrypt.encrypt(
-                    record['email'], 
+                    record['email'],
                     "encryption_key"
                 )
-        
+
         # 3. 保存到Excel
         print("💾 保存到Excel...")
         excel_utils.write_excel(
-            raw_data, 
+            raw_data,
             "processed_data.xlsx",
             sheet_name="ProcessedData"
         )
-        
+
         # 4. 生成报告
         print("📊 生成处理报告...")
         report = {
@@ -415,16 +425,16 @@ def process_data_pipeline():
             'encrypted_fields': ['email'],
             'output_file': 'processed_data.xlsx'
         }
-        
+
         excel_utils.write_excel(
-            [report], 
+            [report],
             "processing_report.xlsx",
             sheet_name="Report"
         )
-        
+
         print("✅ 数据处理管道完成!")
         return True
-    
+
     else:
         print(f"❌ API请求失败: {response.status_code}")
         return False
@@ -500,7 +510,7 @@ python run_module_tests.py all
 
 - ✅ **RSA加密工具** - 密钥生成、加解密、数字签名
 - ✅ **AES加密工具** - 对称加密解密功能
-- ✅ **MD5哈希工具** - 哈希计算和验证
+- ✅ **bcrypt密码哈希** - 安全的密码哈希和验证
 - ✅ **SHA哈希工具** - 安全哈希算法
 - ✅ **Excel处理工具** - 文件读写、格式处理
 - ✅ **HTTP请求工具** - 网络请求、响应处理
@@ -533,8 +543,13 @@ encrypted = aes_encrypt.encrypt(data, key)
 import keyring
 keyring.set_password("myapp", "encryption_key", key.hex())
 
-# ✅ 推荐：使用SHA256而非MD5用于安全哈希
-password_hash = sha_256_encrypt.encrypt(password + salt)
+# ✅ 推荐：使用bcrypt进行密码哈希（而不是MD5）
+password_hash = bcrypt_hash.hash_password(password)
+is_valid = bcrypt_hash.verify_password(password, password_hash)
+
+# ✅ 推荐：定期检查是否需要升级哈希
+if bcrypt_hash.needs_rehash(password_hash):
+    password_hash = bcrypt_hash.hash_password(password)
 ```
 
 #### 敏感数据处理
