@@ -33,3 +33,8 @@ class InvalidTokenTypeException(APIException):
 class RefreshTokenException(APIException):
     def __init__(self):
         super().__init__(status_code=HTTPStatus.UNAUTHORIZED.code, detail="Invalid or expired refresh token")
+
+class DatabaseException(APIException):
+    """数据库异常"""
+    def __init__(self, detail: str = "Database error"):
+        super().__init__(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail)

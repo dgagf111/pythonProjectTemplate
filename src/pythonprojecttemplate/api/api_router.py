@@ -1,22 +1,26 @@
 from fastapi import APIRouter, Depends, Body
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from .auth.auth_service import authenticate_user, get_current_user, get_db, get_current_app
 from .auth.token_service import create_tokens, refresh_access_token, revoke_tokens, generate_permanent_token
 from pythonprojecttemplate.api.models.token_response_model import TokenResponse
 from pythonprojecttemplate.api.models.auth_models import User
-from pythonprojecttemplate.config.config import config
-from .auth.token_service import verify_token    
+from pythonprojecttemplate.config.settings import settings
+from .auth.token_service import verify_token
 from pythonprojecttemplate.log.logHelper import get_logger
-from pythonprojecttemplate.api.exception.custom_exceptions import APIException, IncorrectCredentialsException, InvalidCredentialsException, InvalidTokenException
+from pythonprojecttemplate.api.exception.custom_exceptions import (
+    APIException,
+    IncorrectCredentialsException,
+    InvalidCredentialsException,
+    InvalidTokenException
+)
 from pythonprojecttemplate.api.models.result_vo import ResultVO
 from pythonprojecttemplate.api.http_status import HTTPStatus
 
 logger = get_logger()
 
-api_config = config.get_api_config()
-# 从配置中获取API版本，如果为空则使用默认值
-API_VERSION = config.get_api_version()
+# 缓存 API 版本，避免重复调用
+API_VERSION = settings.common.api_version
 API_PREFIX = f"/api/{API_VERSION}"
 
 api_router = APIRouter(prefix=API_PREFIX)
@@ -26,44 +30,52 @@ api_router = APIRouter(prefix=API_PREFIX)
 #######################
 
 @api_router.post("/token")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_db)):
-    """
-    用户登录并获取访问令牌
-    
+async def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    session: AsyncSession = Depends(get_db)
+):
+    """用户登录并获取访问令牌
+
     此接口用于用户登录并获取访问令牌和刷新令牌。
-    
-    参数:
-    - form_data (OAuth2PasswordRequestForm): 包含以下字段的表单数据:
-        - username (str): 用户名
-        - password (str): 密码
-    - session (Session): 数据库会话对象
-    
-    返回:
-    - 成功: ResultVO对象,包含以下数据:
-        - code (int): 状态码
-        - message (str): 成功消息
-        - data (dict): 包含以下字段:
-            - access_token (str): 访问令牌
-            - token_type (str): 令牌类型,固定为"bearer"
-            - refresh_token (str): 刷新令牌
-    - 失败: ResultVO对象,包含以下数据:
-        - code (int): 错误码
-        - message (str): 错误信息
-        - data (None): 失败时data为空
-    
-    异常:
-    - InvalidCredentialsException: 用户名或密码不正确
-    - 其他异常: 记录到日志并返回通用错误信息
+
+    Args:
+        form_data: 包含用户名和密码的表单数据
+        session: 异步数据库会话
+
+    Returns:
+        ResultVO: 成功时包含访问令牌和刷新令牌
+
+    Raises:
+        InvalidCredentialsException: 用户名或密码不正确
     """
     try:
-        user = authenticate_user(session, form_data.username, form_data.password)
-        if not user:
-            raise InvalidCredentialsException(detail="Incorrect username or password")
-        access_token, refresh_token = create_tokens(form_data.username)
-        return ResultVO.success(data=TokenResponse(access_token=access_token, token_type="bearer", refresh_token=refresh_token))
+        # authenticate_user 现在会抛出异常或返回 tokens
+        tokens = await authenticate_user(session, form_data.username, form_data.password)
+
+        if not tokens:
+            raise InvalidCredentialsException(detail="用户名或密码不正确")
+
+        logger.info(f"用户登录成功: {form_data.username}")
+        return ResultVO.success(
+            data=TokenResponse(
+                access_token=tokens["access_token"],
+                token_type="bearer",
+                refresh_token=tokens["refresh_token"]
+            ),
+            message="登录成功"
+        )
+    except (InvalidCredentialsException, IncorrectCredentialsException) as e:
+        logger.warning(f"登录失败: {form_data.username}, 原因: {e.detail}")
+        return ResultVO.error(
+            code=HTTPStatus.UNAUTHORIZED.code,
+            message=e.detail or "用户名或密码不正确"
+        )
     except Exception as e:
-        logger.error(f"Error logging in: {str(e)}")
-        return ResultVO.error(code=e.status_code, message=e.detail)
+        logger.error(f"登录时发生未知错误: {form_data.username}", exc_info=True)
+        return ResultVO.error(
+            code=HTTPStatus.INTERNAL_SERVER_ERROR.code,
+            message="登录失败，请稍后重试"
+        )
 
 @api_router.post("/refresh")
 async def refresh_token(refresh_token: str = Body(..., embed=True)):
@@ -147,18 +159,17 @@ async def logout(current_user: User = Depends(get_current_user)):
         return ResultVO.error(code=HTTPStatus.INTERNAL_SERVER_ERROR.code, message="Failed to log out")
 
 @api_router.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_db)):
-    """
-    用户登录
-    
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_db)):
+    """用户登录
+
     此接口用于用户登录并获取访问令牌和刷新令牌。
-    
+
     参数:
     - form_data (OAuth2PasswordRequestForm): 包含以下字段的表单数据:
         - username (str): 用户名
         - password (str): 密码
-    - session (Session): 数据库会话对象
-    
+    - session (AsyncSession): 异步数据库会话对象
+
     返回:
     - 成功: ResultVO对象,包含以下数据:
         - code (int): 状态码
@@ -171,13 +182,13 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
         - code (int): 错误码
         - message (str): 错误信息
         - data (None): 失败时data为空
-    
+
     异常:
     - IncorrectCredentialsException: 用户名或密码不正确
     - 其他异常: 记录到日志并返回通用错误信息
     """
     try:
-        user = authenticate_user(session, form_data.username, form_data.password)
+        user = await authenticate_user(session, form_data.username, form_data.password)
         if not user:
             raise IncorrectCredentialsException(detail="Incorrect username or password")
         access_token, refresh_token = create_tokens(user.username)
@@ -187,17 +198,16 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
         return ResultVO.error(code=HTTPStatus.INTERNAL_SERVER_ERROR.code, message="Invalid credentials")
 
 @api_router.post("/generate_permanent_token")
-async def generate_token(user_id: int, provider: str, session: Session = Depends(get_db)):
-    """
-    生成永久令牌
-    
+async def generate_token(user_id: int, provider: str, session: AsyncSession = Depends(get_db)):
+    """生成永久令牌
+
     此接口用于生成长期有效的令牌,通常用于第三方应用或服务集成。
-    
+
     参数:
     - user_id (int): 用户ID
     - provider (str): 提供者信息,用于标识令牌的来源或用途
-    - session (Session): 数据库会话对象
-    
+    - session (AsyncSession): 异步数据库会话对象
+
     返回:
     - 成功: ResultVO对象,包含以下数据:
         - code (int): 状态码
@@ -210,7 +220,7 @@ async def generate_token(user_id: int, provider: str, session: Session = Depends
         - data (None): 失败时data为空
     """
     try:
-        token = generate_permanent_token(session, user_id, provider)
+        token = await generate_permanent_token(session, user_id, provider)
         return ResultVO.success(data={"permanent_token": token})
     except Exception as e:
         logger.error(f"Error generating permanent token: {str(e)}")

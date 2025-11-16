@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, UTC, timezone
 from typing import Tuple
 from jose import jwt
+from sqlalchemy import select
+
 from pythonprojecttemplate.cache.cache_manager import get_cache_manager
 from pythonprojecttemplate.config.settings import settings
 from pythonprojecttemplate.log.logHelper import get_logger
@@ -14,7 +16,7 @@ from .utils import (
 )
 from pythonprojecttemplate.cache.cache_keys_manager import CacheKeysManager
 from ..models.auth_models import Token
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 import secrets
 from zoneinfo import ZoneInfo
 from pythonprojecttemplate.api.exception.custom_exceptions import InvalidTokenException, TokenRevokedException
@@ -110,7 +112,8 @@ def revoke_tokens(username: str):
         del token_map[username]
     cache_manager.set(cache_keys.get_auth_token_map_key(), token_map)
 
-def generate_permanent_token(session: Session, user_id: int, provider: str) -> str:
+async def generate_permanent_token(session: AsyncSession, user_id: int, provider: str) -> str:
+    """生成永久token并保存到数据库"""
     token = secrets.token_urlsafe(32)
     new_token = Token(
         user_id=user_id,
@@ -120,14 +123,38 @@ def generate_permanent_token(session: Session, user_id: int, provider: str) -> s
         state=0  # 正常状态
     )
     session.add(new_token)
-    session.commit()
+    await session.commit()
     return token
 
-def verify_permanent_token(session: Session, token: str) -> bool:
-    stored_token = session.query(Token).filter_by(token=token, token_type=1, state=0).first()
-    if stored_token:
-        # 确保 stored_token.expires_at 是带时区的
-        if stored_token.expires_at.tzinfo is None:
-            stored_token.expires_at = stored_token.expires_at.replace(tzinfo=TIME_ZONE)
-        return stored_token.expires_at > datetime.now(TIME_ZONE)
-    return False
+async def verify_permanent_token(session: AsyncSession, token: str) -> bool:
+    """验证永久token"""
+    try:
+        result = await session.execute(
+            select(Token).where(
+                Token.token == token,
+                Token.token_type == 1,
+                Token.state == 0
+            )
+        )
+        stored_token = result.scalar_one_or_none()
+
+        if not stored_token:
+            logger.debug(f"Token not found: {token[:10]}...")
+            return False
+
+        # 安全地检查过期时间，不修改原始对象
+        expires_at = stored_token.expires_at
+        if expires_at.tzinfo is None:
+            # 如果没有时区信息，添加默认时区
+            expires_at = expires_at.replace(tzinfo=TIME_ZONE)
+
+        is_valid = expires_at > datetime.now(TIME_ZONE)
+
+        if not is_valid:
+            logger.warning(f"Token expired: {token[:10]}..., expires_at: {expires_at}")
+
+        return is_valid
+
+    except Exception as e:
+        logger.error(f"验证token时发生错误: {e}", exc_info=True)
+        return False

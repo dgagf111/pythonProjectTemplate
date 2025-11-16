@@ -4,15 +4,25 @@ from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, UTC
-from typing import Optional
+from typing import Optional, Dict, Any, Union, AsyncGenerator
+from sqlalchemy import select
+
 from pythonprojecttemplate.api.auth.token_service import create_tokens, verify_token
 from pythonprojecttemplate.cache.cache_manager import get_cache_manager
-from pythonprojecttemplate.db.session import get_session
+from pythonprojecttemplate.db.session import AsyncSessionLocal, AsyncSession
 from ..models.auth_models import User, Token
 from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from sqlalchemy.orm import Session
 from pythonprojecttemplate.cache.cache_keys_manager import CacheKeysManager
-from pythonprojecttemplate.api.exception.custom_exceptions import InvalidTokenException, UserNotFoundException, InvalidCredentialsException
+from pythonprojecttemplate.api.exception.custom_exceptions import (
+    InvalidTokenException,
+    UserNotFoundException,
+    InvalidCredentialsException,
+    IncorrectCredentialsException,
+    DatabaseException
+)
+from pythonprojecttemplate.log.logHelper import get_logger
+
+logger = get_logger()
 
 # 获取缓存键管理器
 cache_keys = CacheKeysManager()
@@ -26,12 +36,18 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # 使用缓存管理器实例
 cache_manager = get_cache_manager()
 
-def get_db():
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
-    创建并yield一个数据库会话。
-    在请求结束时自动关闭会话。
+    获取异步数据库会话（FastAPI 依赖注入用）
+
+    使用方式:
+    async def endpoint(session: AsyncSession = Depends(get_db)):
+        ...
+
+    注意：不要手动调用此函数，应该通过 Depends(get_db) 使用
     """
-    yield from get_session()
+    async with AsyncSessionLocal() as session:
+        yield session
 
 def generate_secret_key():
     """
@@ -71,22 +87,62 @@ def verify_password(plain_password, hashed_password):
     """
     return pwd_context.verify(plain_password, hashed_password)
 
-def get_user(session: Session, username: str):
+async def get_user(session: AsyncSession, username: str) -> Optional[User]:
     """
     根据用户名从数据库中获取用户。
-    
-    :param session: 数据库会话
-    :param username: 用户名
-    :return: 用户对，如果不存在则返回None
-    """
-    return session.query(User).filter(User.username == username, User.state >= 0).first()
 
-def authenticate_user(session: Session, username: str, password: str):
-    user = get_user(session, username)
-    if not user or not verify_password(password, user.password_hash):
-        return False
+    Args:
+        session: 异步数据库会话
+        username: 用户名
+
+    Returns:
+        用户对象，如果不存在则返回 None
+
+    Raises:
+        DatabaseException: 数据库查询失败
+    """
+    try:
+        result = await session.execute(
+            select(User).where(User.username == username, User.state >= 0)
+        )
+        return result.scalar_one_or_none()
+    except Exception as e:
+        logger.error(f"数据库查询用户失败: {e}", exc_info=True)
+        raise DatabaseException(detail=f"查询用户失败: {str(e)}")
+
+async def authenticate_user(
+    session: AsyncSession,
+    username: str,
+    password: str
+) -> Union[Dict[str, str], None]:
+    """
+    验证用户凭据
+
+    Args:
+        session: 异步数据库会话
+        username: 用户名
+        password: 密码（明文）
+
+    Returns:
+        成功: 包含 access_token 和 refresh_token 的字典
+        失败: None
+
+    Raises:
+        IncorrectCredentialsException: 密码错误时抛出
+    """
+    user = await get_user(session, username)
+    if not user:
+        return None
+
+    if not verify_password(password, user.password_hash):
+        raise IncorrectCredentialsException(detail="密码错误")
+
     access_token, refresh_token = create_tokens(user.username)
-    return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "refresh_token": refresh_token
+    }
 
 def create_access_token(data: dict, username: str, expires_delta: Optional[timedelta] = None):
     """
@@ -112,12 +168,12 @@ def create_access_token(data: dict, username: str, expires_delta: Optional[timed
     
     return encoded_jwt
 
-async def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_db)):
+async def get_current_user(token: str = Depends(oauth2_scheme), session: AsyncSession = Depends(get_db)):
     """
     从JWT令牌中获取当前用户，并验证token是否存在于token大map结构中。
-    
+
     :param token: JWT令牌
-    :param session: 数据库会话
+    :param session: 异步数据库会话
     :return: 当前用户对象
     :raises InvalidTokenException: 如果凭据无效
     :raises UserNotFoundException: 如果用户不存在
@@ -127,8 +183,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
         username: str = payload.get("sub")
         if username is None:
             raise InvalidTokenException()
-        
-        user = get_user(session, username)
+
+        user = await get_user(session, username)
         if user is None:
             raise UserNotFoundException()
         return user
@@ -136,18 +192,22 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
         raise InvalidTokenException()
 
 # 新增函数：创建新用户
-def create_user(session: Session, username: str, password: str, email: str):
+async def create_user(session: AsyncSession, username: str, password: str, email: str):
+    """创建新用户"""
     hashed_password = pwd_context.hash(password)
     new_user = User(username=username, password_hash=hashed_password, email=email)
     session.add(new_user)
-    session.commit()
+    await session.commit()
+    await session.refresh(new_user)
     return new_user
 
 # 新增函数：保存token
-def save_token(session: Session, user_id: int, token: str, token_type: int, expires_at: datetime):
+async def save_token(session: AsyncSession, user_id: int, token: str, token_type: int, expires_at: datetime):
+    """保存token到数据库"""
     new_token = Token(user_id=user_id, token=token, token_type=token_type, expires_at=expires_at)
     session.add(new_token)
-    session.commit()
+    await session.commit()
+    await session.refresh(new_token)
     return new_token
 
 def get_password_hash(password: str) -> str:
@@ -158,9 +218,10 @@ from .token_service import verify_permanent_token
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-async def get_current_app(api_key: str = Depends(api_key_header), session: Session = Depends(get_db)):
+async def get_current_app(api_key: str = Depends(api_key_header), session: AsyncSession = Depends(get_db)):
+    """验证API密钥"""
     if not api_key:
         raise InvalidCredentialsException(detail="API key is missing")
-    if not verify_permanent_token(session, api_key):
+    if not await verify_permanent_token(session, api_key):
         raise InvalidTokenException(detail="Invalid API key")
     return api_key

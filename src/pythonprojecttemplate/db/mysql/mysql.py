@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from sqlalchemy.orm import scoped_session
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from pythonprojecttemplate.db.session import Base, SessionLocal, engine
+from pythonprojecttemplate.db.session import Base, async_engine, AsyncSessionLocal
 
 
 MySQL_Base = Base
@@ -10,15 +10,18 @@ MySQL_Base = Base
 
 class MySQL_Database:
     """
-    Backwards compatible database helper that reuses the shared engine/session factory.
+    Database helper for async operations.
     """
 
     def __init__(self):
-        self.engine = engine
-        self.Session = scoped_session(SessionLocal)
+        self.engine = async_engine
+        self.Session = AsyncSessionLocal
 
-    def get_session(self):
-        return self.Session()
+    async def get_session(self):
+        """Get an async database session"""
+        async with self.Session() as session:
+            yield session
 
     def close_session(self):
-        self.Session.remove()
+        """Close session (handled by async context manager)"""
+        pass
