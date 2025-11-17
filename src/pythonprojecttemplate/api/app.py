@@ -4,6 +4,7 @@ from contextlib import AsyncExitStack, asynccontextmanager
 
 from fastapi import FastAPI, Request
 
+from pythonprojecttemplate.api.auth.token_registry import token_registry
 from pythonprojecttemplate.api.http_status import HTTPStatus
 from pythonprojecttemplate.api.models.result_vo import ResultVO
 
@@ -21,6 +22,7 @@ logger = get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting scheduler and monitoring centers")
+    await token_registry.startup()
     scheduler_center.start()
     await monitoring_center.start()
 
@@ -32,9 +34,19 @@ async def lifespan(app: FastAPI):
             logger.info("Shutting down background services")
             scheduler_center.shutdown()
             await monitoring_center.shutdown()
+            await token_registry.shutdown()
 
 
 def create_application() -> FastAPI:
+    origin = getattr(settings, "load_origin", {})
+    logger.info(
+        "Configuration version %s loaded from %s (env=%s, env_file=%s, config_file=%s)",
+        settings.config_version,
+        origin.get("source", "unknown"),
+        origin.get("env_name", settings.env),
+        origin.get("env_file", "n/a"),
+        origin.get("config_file", "n/a"),
+    )
     app = FastAPI(
         title=settings.api.title,
         description=settings.api.description,

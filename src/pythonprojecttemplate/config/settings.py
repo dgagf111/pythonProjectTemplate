@@ -1,12 +1,74 @@
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Self
+from typing import Any, Dict, List, Literal
 
 import yaml
-from pydantic import BaseModel, Field
+from dotenv import dotenv_values
+from pydantic import BaseModel, Field, FieldValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
+
+
+logger = logging.getLogger(__name__)
+
+
+CONFIG_LOAD_META: Dict[str, str] = {
+    "env_file": "",
+    "config_file": "",
+    "env_name": "",
+    "source": "environment",
+}
+
+LEGACY_ENV_TO_PATH: Dict[str, tuple[str, ...]] = {
+    "SECRET_KEY": ("security", "token", "secret_key"),
+    "TOKEN_SECRET_KEY": ("security", "token", "secret_key"),
+    "TOKEN_BACKEND": ("security", "revocation", "backend"),
+    "REDIS_HOST": ("security", "revocation", "redis", "host"),
+    "REDIS_PORT": ("security", "revocation", "redis", "port"),
+    "REDIS_DB": ("security", "revocation", "redis", "db"),
+    "REDIS_USERNAME": ("security", "revocation", "redis", "username"),
+    "REDIS_PASSWORD": ("security", "revocation", "redis", "password"),
+    "REDIS_SSL": ("security", "revocation", "redis", "ssl"),
+}
+
+ENV_PREFIX = "PPT_"
+_DOTENV_CACHE: Dict[str, str] | None = None
+
+
+def _load_dotenv_cache() -> Dict[str, str]:
+    global _DOTENV_CACHE
+    if _DOTENV_CACHE is not None:
+        return _DOTENV_CACHE
+    env_file = Path(".env")
+    if env_file.exists():
+        loaded = dotenv_values(env_file)
+        _DOTENV_CACHE = {key: str(value) for key, value in loaded.items() if value is not None}
+    else:
+        _DOTENV_CACHE = {}
+    return _DOTENV_CACHE
+
+
+def _lookup_legacy_env_value(key: str) -> str | None:
+    prefixed = f"{ENV_PREFIX}{key}"
+    if prefixed in os.environ:
+        return os.environ[prefixed]
+    if key in os.environ:
+        return os.environ[key]
+    dotenv_values_cache = _load_dotenv_cache()
+    return dotenv_values_cache.get(prefixed) or dotenv_values_cache.get(key)
+
+
+def _inject_nested_value(target: Dict[str, Any], path: tuple[str, ...], value: str) -> None:
+    cursor = target
+    for chunk in path[:-1]:
+        existing = cursor.get(chunk)
+        if not isinstance(existing, dict):
+            existing = {}
+            cursor[chunk] = existing
+        cursor = existing
+    cursor.setdefault(path[-1], value)
 
 
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
@@ -45,6 +107,14 @@ class YamlConfigSettingsSource(PydanticBaseSettingsSource):
         config_data = self._load_yaml(config_yaml)
         merged = _deep_merge(env_data, config_data)
         merged["env"] = env_name
+        CONFIG_LOAD_META.update(
+            {
+                "env_file": str(env_yaml),
+                "config_file": str(config_yaml),
+                "env_name": env_name,
+                "source": "yaml+env",
+            }
+        )
         return merged
 
     def get_field_value(self, field: Any, field_name: str) -> Any:
@@ -144,6 +214,8 @@ class MonitoringSettings(BaseModel):
     cpu_threshold: int = 80
     memory_threshold: int = 80
     interval_seconds: int = Field(default=60, ge=5, le=3600)
+    max_retries: int = Field(default=3, ge=0, le=50)
+    retry_interval_seconds: int = Field(default=5, ge=1, le=300)
 
 
 class SecurityTokenSettings(BaseModel):
@@ -161,12 +233,43 @@ class SecurityRedisSettings(BaseModel):
     password: str | None = None
     ssl: bool = False
 
+    @field_validator("host", mode="before")
+    @classmethod
+    def _ensure_host(cls, value: str | None) -> str:
+        if value is None:
+            return "localhost"
+        host = value.strip()
+        if not host:
+            logger.warning("Empty Redis host detected, falling back to 'localhost'")
+            return "localhost"
+        return host
+
+    @field_validator("port", "db", mode="before")
+    @classmethod
+    def _ensure_numeric(cls, value: Any, info: FieldValidationInfo) -> Any:
+        if value in (None, "", " "):
+            defaults = {"port": 6379, "db": 2}
+            return defaults[info.field_name]
+        return value
+
 
 class SecurityRevocationSettings(BaseModel):
     backend: Literal["redis", "memory"] = "memory"
     redis: SecurityRedisSettings = SecurityRedisSettings()
     key_prefix: str = "ppt:security"
     default_ttl_seconds: int = Field(default=7 * 24 * 3600, gt=0)
+    memory_cleanup_interval_seconds: int = Field(default=120, ge=5, le=3600)
+
+    @field_validator("backend", mode="before")
+    @classmethod
+    def _normalize_backend(cls, value: str | None) -> str:
+        if value is None:
+            return "memory"
+        backend = str(value).lower().strip()
+        if backend not in {"redis", "memory"}:
+            logger.warning("Unknown token backend '%s', using in-memory backend", value)
+            return "memory"
+        return backend
 
 
 class TokenAuditSettings(BaseModel):
@@ -230,6 +333,7 @@ class AppSettings(BaseSettings):
     )
 
     env: str = "dev"
+    config_version: str = Field(default="2024.10", alias="config_version")
     module: ModuleSettings = Field(default_factory=ModuleSettings, alias="module_config")
     logging: LoggingSettings = LoggingSettings()
     scheduler: SchedulerSettings = SchedulerSettings()
@@ -241,6 +345,20 @@ class AppSettings(BaseSettings):
     security: SecuritySettings = SecuritySettings()
     encryption: EncryptionSettings = Field(default_factory=EncryptionSettings, alias="encryption_config")
     tasks: Dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _apply_legacy_environment_keys(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        payload: Dict[str, Any] = dict(data) if isinstance(data, dict) else {}
+        for legacy_key, path in LEGACY_ENV_TO_PATH.items():
+            value = _lookup_legacy_env_value(legacy_key)
+            if value is None:
+                continue
+            _inject_nested_value(payload, path, value)
+        return payload
+
+    def model_post_init(self, __context: Any) -> None:
+        self.load_origin = dict(CONFIG_LOAD_META)
 
     @classmethod
     def settings_customise_sources(

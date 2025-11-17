@@ -64,6 +64,8 @@ monitoring:
   prometheus_port: 9966  # Prometheus监控服务的端口号，用于暴露监控指标
   cpu_threshold: 80  # CPU使用率阈值（百分比），超过此值将触发警告
   memory_threshold: 80  # 内存使用率阈值（百分比），超过此值将触发警告
+  max_retries: 5  # 指标服务器启动失败时的最大重试次数
+  retry_interval_seconds: 5  # 指标服务器重试间隔
 
 # API服务器配置（开发环境）
 api:
@@ -113,6 +115,7 @@ security:
     backend: memory
     key_prefix: ppt:security
     default_ttl_seconds: 604800
+    memory_cleanup_interval_seconds: 120
     redis:
       host: localhost
       port: 6379
