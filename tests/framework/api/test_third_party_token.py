@@ -1,127 +1,166 @@
+import asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from pythonprojecttemplate.config.config import config
-from zoneinfo import ZoneInfo
+
+import pytest
+import pytest_asyncio
+from fastapi.testclient import TestClient
+from sqlalchemy import delete, select, text
 from sqlalchemy.exc import OperationalError
-from sqlalchemy import text
+from zoneinfo import ZoneInfo
+
+from pythonprojecttemplate.api.api_router import API_PREFIX, api_router
+from pythonprojecttemplate.api.auth.token_service import generate_permanent_token
+from pythonprojecttemplate.api.main import app
+from pythonprojecttemplate.api.models.auth_models import ThirdPartyToken, Token, User
+from pythonprojecttemplate.config.config import config
+from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
 
 TIME_ZONE = ZoneInfo(config.get_time_zone())
-import pytest
-from fastapi.testclient import TestClient
-from fastapi import FastAPI
-from sqlalchemy.orm import Session
-from pythonprojecttemplate.api.api_router import api_router, API_PREFIX
-from pythonprojecttemplate.api.auth.token_service import generate_permanent_token
-from pythonprojecttemplate.api.models.auth_models import User, ThirdPartyToken, Token
-from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
-from pythonprojecttemplate.api.main import app
 
 app.include_router(api_router)
-
 client = TestClient(app)
 
-# 检查数据库连接是否可用
-def check_database_connection():
+
+@asynccontextmanager
+async def mysql_session():
+    db = MySQL_Database()
+    session_gen = db.get_session()
+    session = await session_gen.__anext__()
     try:
-        db = MySQL_Database()
-        session = db.get_session()
-        session.execute(text("SELECT 1"))
-        session.close()
+        yield session
+    finally:
+        try:
+            await session.rollback()
+        finally:
+            await session_gen.aclose()
+
+
+async def _ping_database() -> None:
+    async with mysql_session() as session:
+        await session.execute(text("SELECT 1"))
+
+
+def check_database_connection() -> bool:
+    try:
+        asyncio.run(_ping_database())
         return True
     except OperationalError:
         return False
+    except Exception:
+        return False
 
-# 如果数据库不可用，跳过所有测试
-pytestmark = pytest.mark.skipif(
-    not check_database_connection(),
-    reason="数据库连接不可用，跳过第三方令牌测试"
-)
 
-@pytest.fixture(scope="module")
-def db():
-    db = MySQL_Database()
-    yield db
-    db.close_session()
+pytestmark = [
+    pytest.mark.skipif(
+        not check_database_connection(),
+        reason="数据库连接不可用，跳过第三方令牌测试",
+    ),
+    pytest.mark.asyncio,
+]
 
-@pytest.fixture(scope="function")
-def session(db):
-    session = db.get_session()
-    yield session
-    session.close()
 
-@pytest.fixture(autouse=True)
-def clean_test_user(session):
-    session.rollback()
-    session.query(User).filter_by(username="testuser").delete()
-    session.query(ThirdPartyToken).delete()
-    session.commit()
+async def _clear_test_records() -> None:
+    async with mysql_session() as session:
+        user_ids = select(User.user_id).where(User.username == "testuser")
+        await session.execute(delete(ThirdPartyToken).where(ThirdPartyToken.user_id.in_(user_ids)))
+        await session.execute(delete(Token).where(Token.user_id.in_(user_ids)))
+        await session.execute(delete(User).where(User.username == "testuser"))
+        await session.commit()
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def clean_test_records():
+    await _clear_test_records()
     yield
-    session.rollback()
-    session.query(User).filter_by(username="testuser").delete()
-    session.query(ThirdPartyToken).delete()
-    session.commit()
+    await _clear_test_records()
 
-def setup_test_user(session):
+
+@pytest_asyncio.fixture
+async def session():
+    async with mysql_session() as session:
+        yield session
+
+
+async def setup_test_user(session) -> User:
+    result = await session.execute(select(User).where(User.username == "testuser"))
+    user = result.scalar_one_or_none()
+    if user:
+        return user
+
     user = User(username="testuser", password_hash="hashed_password", email="test@example.com")
     session.add(user)
-    session.commit()
+    await session.commit()
+    await session.refresh(user)
     return user
 
-def test_generate_permanent_token(session):
-    user = setup_test_user(session)
-    token = generate_permanent_token(session, user.user_id, "test_provider")
-    assert token is not None
-    stored_token = session.query(Token).filter_by(user_id=user.user_id, token_type=1).first()
-    assert stored_token is not None
+
+async def test_generate_permanent_token(session):
+    user = await setup_test_user(session)
+    token = await generate_permanent_token(session, user.user_id, "test_provider")
+
+    result = await session.execute(
+        select(Token).where(Token.user_id == user.user_id, Token.token_type == 1)
+    )
+    stored_token = result.scalar_one()
     assert stored_token.token == token
 
-def test_third_party_access_with_valid_token(session):
-    user = setup_test_user(session)
-    token = generate_permanent_token(session, user.user_id, "test_provider")
+
+async def test_third_party_access_with_valid_token(session):
+    user = await setup_test_user(session)
+    token = await generate_permanent_token(session, user.user_id, "test_provider")
+
     response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
     assert response.status_code == 200
     assert response.json()["message"] == "Third party access successful"
 
-def test_third_party_access_with_invalid_token():
+
+async def test_third_party_access_with_invalid_token():
     response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": "invalid_token"})
     assert response.status_code == 401
 
-def test_third_party_access_without_token():
+
+async def test_third_party_access_without_token():
     response = client.get(f"{API_PREFIX}/third_party_test")
     assert response.status_code == 401
 
-def test_revoke_permanent_token(session):
-    user = setup_test_user(session)
-    token = generate_permanent_token(session, user.user_id, "test_provider")
-    
-    # 使用token访问
+
+async def test_revoke_permanent_token(session):
+    user = await setup_test_user(session)
+    token = await generate_permanent_token(session, user.user_id, "test_provider")
+
     response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
     assert response.status_code == 200
-    
-    # 撤销token
-    stored_token = session.query(Token).filter_by(token=token, token_type=1).first()
-    stored_token.state = -1  # -1表示已删除
-    session.commit()
-    
-    # 再次尝试使用已撤销的token
+
+    result = await session.execute(
+        select(Token).where(Token.token == token, Token.token_type == 1)
+    )
+    stored_token = result.scalar_one()
+    stored_token.state = -1
+    await session.commit()
+
     response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
     assert response.status_code == 401
 
-def test_permanent_token_expiration(session):
-    user = setup_test_user(session)
-    token = generate_permanent_token(session, user.user_id, "test_provider")
-    
-    # 使用token访问
+
+async def test_permanent_token_expiration(session):
+    user = await setup_test_user(session)
+    token = await generate_permanent_token(session, user.user_id, "test_provider")
+
     response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
     assert response.status_code == 200
-    
-    # 验证token的过期时间是否正确设置
-    stored_token = session.query(Token).filter_by(token=token, token_type=1).first()
-    assert stored_token.expires_at.replace(tzinfo=TIME_ZONE) > (datetime.now(TIME_ZONE) + timedelta(days=365*999))  # 确保至少设置了999年以后
-    
-    # 将token的过期时间设置为过去的时间来模拟过期
+
+    result = await session.execute(
+        select(Token).where(Token.token == token, Token.token_type == 1)
+    )
+    stored_token = result.scalar_one()
+    assert stored_token.expires_at.replace(tzinfo=TIME_ZONE) > (
+        datetime.now(TIME_ZONE) + timedelta(days=365 * 999)
+    )
+
     stored_token.expires_at = datetime.now(TIME_ZONE) - timedelta(days=1)
-    session.commit()
-    
-    # 尝试使用过期的token
+    await session.commit()
+
     response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
     assert response.status_code == 401
+

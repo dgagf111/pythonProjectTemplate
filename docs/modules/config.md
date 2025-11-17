@@ -77,14 +77,16 @@ config.get_common_config()     # 通用配置
 #### 支持的语法
 ```yaml
 # 基础环境变量替换
-mysql:
-  host: ${MYSQL_HOST}          # 必需的环境变量
-  port: ${MYSQL_PORT}          # 自动类型转换
+database:
+  host: ${PPT_DATABASE__HOST}          # 必需的环境变量
+  port: ${PPT_DATABASE__PORT}          # 自动类型转换
   
 # 带默认值的环境变量
+security:
+  token:
+    secret_key: ${PPT_SECURITY__TOKEN__SECRET_KEY:-default-secret}
 api:
-  secret_key: ${SECRET_KEY:-default-secret}
-  debug: ${DEBUG:-false}       # 布尔类型默认值
+  debug: ${PPT_COMMON__DEBUG:-false}       # 布尔类型默认值
 ```
 
 #### 类型转换支持
@@ -289,21 +291,21 @@ ENV=prod python main.py
 #### 开发环境 (.env文件)
 ```bash
 # 数据库配置
-MYSQL_USERNAME=dev_user
-MYSQL_PASSWORD=dev_password
-MYSQL_HOST=localhost
+PPT_DATABASE__USERNAME=dev_user
+PPT_DATABASE__PASSWORD=dev_password
+PPT_DATABASE__HOST=localhost
 
 # API配置
-SECRET_KEY=dev-secret-key
-DEBUG=true
+PPT_SECURITY__TOKEN__SECRET_KEY=dev-secret-key
+PPT_COMMON__DEBUG=true
 ```
 
 #### 生产环境 (环境变量)
 ```bash
-export MYSQL_USERNAME=prod_user
-export MYSQL_PASSWORD=prod_secure_password
-export MYSQL_HOST=prod-db.example.com
-export SECRET_KEY=super-secure-production-key
+export PPT_DATABASE__USERNAME=prod_user
+export PPT_DATABASE__PASSWORD=prod_secure_password
+export PPT_DATABASE__HOST=prod-db.example.com
+export PPT_SECURITY__TOKEN__SECRET_KEY=super-secure-production-key
 ```
 
 ### 4. 自定义配置

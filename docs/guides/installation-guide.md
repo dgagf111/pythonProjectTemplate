@@ -216,26 +216,34 @@ vim .env  # 或使用其他编辑器
 
 ```bash
 # === 数据库配置 ===
-MYSQL_USERNAME=your_username
-MYSQL_PASSWORD=your_password
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_DATABASE=your_database
+PPT_DATABASE__USERNAME=your_username
+PPT_DATABASE__PASSWORD=your_password
+PPT_DATABASE__HOST=localhost
+PPT_DATABASE__PORT=3306
+PPT_DATABASE__DATABASE=your_database
 
-# === API配置 ===
-SECRET_KEY=your-super-secret-key-here
-API_VERSION=v1
+# === 安全配置 ===
+PPT_SECURITY__TOKEN__SECRET_KEY=your-super-secret-key-here
+PPT_SECURITY__TOKEN__ALGORITHM=HS256
+PPT_SECURITY__TOKEN__ACCESS_TOKEN_EXPIRE_MINUTES=180
+PPT_SECURITY__TOKEN__REFRESH_TOKEN_EXPIRE_DAYS=7
 
 # === 可选配置 ===
 # Redis缓存 (如果不配置将使用内存缓存)
-REDIS_HOST=localhost
-REDIS_PORT=6379
+PPT_CACHE__REDIS__HOST=localhost
+PPT_CACHE__REDIS__PORT=6379
+PPT_CACHE__REDIS__DB=0
+
+# Token撤销（可选）
+PPT_SECURITY__REVOCATION__BACKEND=memory
+PPT_SECURITY__REVOCATION__REDIS__HOST=localhost
+PPT_SECURITY__REVOCATION__REDIS__PORT=6379
 
 # 环境标识
 ENV=dev  # dev, test, prod
 ```
 
-#### 生成SECRET_KEY
+#### 生成令牌密钥
 
 ```bash
 # 方法一：使用Python
@@ -368,10 +376,20 @@ api:
   cors_origins: ["*"]
   max_concurrency: 100
   request_timeout: 30
-  api_version: ${API_VERSION}
-  secret_key: ${SECRET_KEY}
-  access_token_expire_minutes: 180
-  refresh_token_expire_days: 10080
+  api_version: ${PPT_COMMON__API_VERSION:-v1}
+
+security:
+  token:
+    secret_key: ${PPT_SECURITY__TOKEN__SECRET_KEY}
+    algorithm: HS256
+    access_token_expire_minutes: 180
+    refresh_token_expire_days: 7
+  revocation:
+    backend: memory
+    redis:
+      host: ${PPT_SECURITY__REVOCATION__REDIS__HOST:-localhost}
+      port: ${PPT_SECURITY__REVOCATION__REDIS__PORT:-6379}
+      db: 2
 
 # 缓存配置
 cache:
@@ -379,8 +397,8 @@ cache:
   ttl: 3600
   max_size: 1000
   redis:
-    host: ${REDIS_HOST:-localhost}
-    port: ${REDIS_PORT:-6379}
+    host: ${PPT_CACHE__REDIS__HOST:-localhost}
+    port: ${PPT_CACHE__REDIS__PORT:-6379}
     db: 0
 
 # 监控配置

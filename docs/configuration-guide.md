@@ -90,7 +90,7 @@ common:
 ### config/dev.yaml（开发环境）
 ```yaml
 # 开发环境配置文件
-mysql:
+database:
   username: your_username
   password: your_password
   host: localhost
@@ -116,28 +116,47 @@ api:
   max_concurrency: 100
   request_timeout: 30
   api_version: v1
-  secret_key: your-secret-key-for-development
-  access_token_expire_minutes: 180  # 3小时
-  refresh_token_expire_days: 10080   # 7天
+  
+security:
+  token:
+    secret_key: your-secret-key-for-development
+    algorithm: HS256
+    access_token_expire_minutes: 180  # 3小时
+    refresh_token_expire_days: 7
+  revocation:
+    backend: memory
+    key_prefix: ppt:security
+    default_ttl_seconds: 604800
+    memory_cleanup_interval_seconds: 120
+    redis:
+      host: localhost
+      port: 6379
+      db: 2
+      username:
+      password:
+      ssl: false
+  audit:
+    enabled: true
+    include_username: true
 ```
 
 ### config/prod.yaml（生产环境）
 ```yaml
 # 生产环境配置文件
-mysql:
-  username: ${MYSQL_USERNAME}
-  password: ${MYSQL_PASSWORD}
-  host: ${MYSQL_HOST}
-  port: ${MYSQL_PORT}
-  database: ${MYSQL_DATABASE}
+database:
+  username: ${PPT_DATABASE__USERNAME}
+  password: ${PPT_DATABASE__PASSWORD}
+  host: ${PPT_DATABASE__HOST}
+  port: ${PPT_DATABASE__PORT}
+  database: ${PPT_DATABASE__DATABASE}
 
 cache:
   type: redis  # 生产环境优先使用Redis缓存
   ttl: 3600
   max_size: 1000
   redis:
-    host: ${REDIS_HOST}
-    port: ${REDIS_PORT}
+    host: ${PPT_CACHE__REDIS__HOST}
+    port: ${PPT_CACHE__REDIS__PORT}
     db: 0
 
 monitoring:
@@ -155,9 +174,28 @@ api:
   max_concurrency: 500  # 生产环境更高的并发数
   request_timeout: 15   # 生产环境更短的超时时间
   api_version: v1
-  secret_key: ${SECRET_KEY}
-  access_token_expire_minutes: 30   # 30分钟
-  refresh_token_expire_days: 4320   # 3天
+  
+security:
+  token:
+    secret_key: ${PPT_SECURITY__TOKEN__SECRET_KEY}
+    algorithm: HS256
+    access_token_expire_minutes: 30   # 30分钟
+    refresh_token_expire_days: 3   # 天
+  revocation:
+    backend: redis
+    key_prefix: ppt:security
+    default_ttl_seconds: 259200
+    memory_cleanup_interval_seconds: 45
+    redis:
+      host: ${PPT_SECURITY__REVOCATION__REDIS__HOST:-redis}
+      port: ${PPT_SECURITY__REVOCATION__REDIS__PORT:-6379}
+      db: 2
+      username:
+      password:
+      ssl: false
+  audit:
+    enabled: true
+    include_username: true
 ```
 
 ## 💻 使用方法
@@ -199,22 +237,29 @@ config.get_api_version()       # API版本
 配置文件中可以使用环境变量：
 
 ```yaml
-mysql:
-  username: ${MYSQL_USERNAME}
-  password: ${MYSQL_PASSWORD}
-  host: ${MYSQL_HOST:-localhost}  # 带默认值
+database:
+  username: ${PPT_DATABASE__USERNAME}
+  password: ${PPT_DATABASE__PASSWORD}
+  host: ${PPT_DATABASE__HOST:-localhost}  # 带默认值
+  port: ${PPT_DATABASE__PORT:-3306}
+  database: ${PPT_DATABASE__DATABASE}
+security:
+  token:
+    secret_key: ${PPT_SECURITY__TOKEN__SECRET_KEY}
 ```
 
 ### 生产环境变量设置
 ```bash
-export MYSQL_USERNAME=prod_user
-export MYSQL_PASSWORD=secure_password
-export MYSQL_HOST=prod-db.example.com
-export MYSQL_PORT=3306
-export MYSQL_DATABASE=prod_database
-export REDIS_HOST=redis.example.com
-export REDIS_PORT=6379
-export SECRET_KEY=your-super-secret-production-key
+export PPT_DATABASE__USERNAME=prod_user
+export PPT_DATABASE__PASSWORD=secure_password
+export PPT_DATABASE__HOST=prod-db.example.com
+export PPT_DATABASE__PORT=3306
+export PPT_DATABASE__DATABASE=prod_database
+export PPT_CACHE__REDIS__HOST=redis.example.com
+export PPT_CACHE__REDIS__PORT=6379
+export PPT_SECURITY__TOKEN__SECRET_KEY=your-super-secret-production-key
+export PPT_SECURITY__REVOCATION__REDIS__HOST=redis.example.com
+export PPT_SECURITY__REVOCATION__REDIS__PORT=6379
 ```
 
 ## 🌍 环境配置对比
@@ -274,8 +319,8 @@ def reload_config():
 ```dockerfile
 # Dockerfile中设置环境
 ENV ENV=prod
-ENV MYSQL_USERNAME=prod_user
-ENV SECRET_KEY=your-production-secret
+ENV PPT_DATABASE__USERNAME=prod_user
+ENV PPT_SECURITY__TOKEN__SECRET_KEY=your-production-secret
 
 # 复制配置文件
 COPY env.yaml /app/
@@ -291,9 +336,9 @@ services:
     build: .
     environment:
       - ENV=prod
-      - MYSQL_USERNAME=${MYSQL_USERNAME}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-      - SECRET_KEY=${SECRET_KEY}
+      - PPT_DATABASE__USERNAME=${PPT_DATABASE__USERNAME}
+      - PPT_DATABASE__PASSWORD=${PPT_DATABASE__PASSWORD}
+      - PPT_SECURITY__TOKEN__SECRET_KEY=${PPT_SECURITY__TOKEN__SECRET_KEY}
     env_file:
       - .env.prod
 ```

@@ -83,29 +83,42 @@ sudo tee /etc/pythonapp/production.env << 'EOF'
 # 应用配置
 ENV=production
 DEBUG=false
-SECRET_KEY=your-super-secret-key-here
-API_HOST=0.0.0.0
-API_PORT=8000
+PPT_SECURITY__TOKEN__SECRET_KEY=your-super-secret-key-here
+PPT_API__HOST=0.0.0.0
+PPT_API__PORT=8000
 
 # 数据库配置
+PPT_DATABASE__HOST=localhost
+PPT_DATABASE__PORT=3306
+PPT_DATABASE__USERNAME=app_user
+PPT_DATABASE__PASSWORD=secure_password_here
+PPT_DATABASE__DATABASE=production_db
+
+# Redis配置
+PPT_CACHE__REDIS__HOST=localhost
+PPT_CACHE__REDIS__PORT=6379
+PPT_CACHE__REDIS__DB=0
+PPT_SECURITY__REVOCATION__BACKEND=redis
+PPT_SECURITY__REVOCATION__REDIS__HOST=localhost
+PPT_SECURITY__REVOCATION__REDIS__PORT=6379
+PPT_SECURITY__REVOCATION__REDIS__PASSWORD=redis_password_here
+
+# （可选）为了兼容现有docker-compose模板中对MySQL/Redis容器的引用，保留旧变量
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
 MYSQL_USERNAME=app_user
 MYSQL_PASSWORD=secure_password_here
 MYSQL_DATABASE=production_db
-
-# Redis配置
-REDIS_HOST=localhost
-REDIS_PORT=6379
 REDIS_PASSWORD=redis_password_here
 
 # 日志配置
-LOG_LEVEL=INFO
-LOG_DIR=/var/log/pythonapp
+PPT_LOGGING__LOG_LEVEL=INFO
+PPT_LOGGING__BASE_LOG_DIRECTORY=/var/log/pythonapp
 
 # 监控配置
-PROMETHEUS_PORT=9966
-METRICS_ENABLED=true
+PPT_MONITORING__PROMETHEUS_PORT=9966
+PPT_MONITORING__CPU_THRESHOLD=70
+PPT_MONITORING__MEMORY_THRESHOLD=70
 EOF
 
 # 设置权限
@@ -422,35 +435,48 @@ server {
 
 ```yaml
 # config/production.yaml
-mysql:
-  host: ${MYSQL_HOST}
-  port: ${MYSQL_PORT}
-  username: ${MYSQL_USERNAME}
-  password: ${MYSQL_PASSWORD}
-  database: ${MYSQL_DATABASE}
+database:
+  host: ${PPT_DATABASE__HOST}
+  port: ${PPT_DATABASE__PORT}
+  username: ${PPT_DATABASE__USERNAME}
+  password: ${PPT_DATABASE__PASSWORD}
+  database: ${PPT_DATABASE__DATABASE}
   pool_size: 20
 
 api:
-  host: ${API_HOST}
-  port: ${API_PORT}
+  host: ${PPT_API__HOST}
+  port: ${PPT_API__PORT}
   workers: 4
+
+security:
+  token:
+    secret_key: ${PPT_SECURITY__TOKEN__SECRET_KEY}
+    algorithm: HS256
+  revocation:
+    backend: ${PPT_SECURITY__REVOCATION__BACKEND:-redis}
+    redis:
+      host: ${PPT_SECURITY__REVOCATION__REDIS__HOST}
+      port: ${PPT_SECURITY__REVOCATION__REDIS__PORT}
+      password: ${PPT_SECURITY__REVOCATION__REDIS__PASSWORD}
 
 cache:
   type: redis
-  host: ${REDIS_HOST}
-  port: ${REDIS_PORT}
-  password: ${REDIS_PASSWORD}
+  redis:
+    host: ${PPT_CACHE__REDIS__HOST}
+    port: ${PPT_CACHE__REDIS__PORT}
+    db: ${PPT_CACHE__REDIS__DB}
 
 log:
-  level: ${LOG_LEVEL}
+  level: ${PPT_LOGGING__LOG_LEVEL}
   format: structured
   console_output: false
   file_output: true
-  log_dir: ${LOG_DIR}
+  log_dir: ${PPT_LOGGING__BASE_LOG_DIRECTORY}
 
 monitoring:
-  prometheus_port: ${PROMETHEUS_PORT}
-  metrics_enabled: ${METRICS_ENABLED}
+  prometheus_port: ${PPT_MONITORING__PROMETHEUS_PORT}
+  cpu_threshold: ${PPT_MONITORING__CPU_THRESHOLD}
+  memory_threshold: ${PPT_MONITORING__MEMORY_THRESHOLD}
 ```
 
 ## 📊 监控配置
