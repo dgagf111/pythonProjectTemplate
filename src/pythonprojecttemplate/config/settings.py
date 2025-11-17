@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Self
+from typing import Any, Dict, List, Literal, Self
 
 import yaml
 from pydantic import BaseModel, Field
@@ -104,9 +104,6 @@ class ApiSettings(BaseModel):
     cors_origins: List[str] = Field(default_factory=lambda: ["*"])
     max_concurrency: int = 100
     request_timeout: int = 30
-    secret_key: str = "change-me"
-    access_token_expire_minutes: int = 180
-    refresh_token_expire_days: int = 7
 
 
 class DatabaseSettings(BaseModel):
@@ -146,6 +143,41 @@ class MonitoringSettings(BaseModel):
     prometheus_port: int = 9966
     cpu_threshold: int = 80
     memory_threshold: int = 80
+    interval_seconds: int = Field(default=60, ge=5, le=3600)
+
+
+class SecurityTokenSettings(BaseModel):
+    secret_key: str = Field(default="change-me", min_length=8)
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = Field(default=180, ge=5, le=1440)
+    refresh_token_expire_days: int = Field(default=7, ge=1, le=90)
+
+
+class SecurityRedisSettings(BaseModel):
+    host: str = "localhost"
+    port: int = 6379
+    db: int = 2
+    username: str | None = None
+    password: str | None = None
+    ssl: bool = False
+
+
+class SecurityRevocationSettings(BaseModel):
+    backend: Literal["redis", "memory"] = "memory"
+    redis: SecurityRedisSettings = SecurityRedisSettings()
+    key_prefix: str = "ppt:security"
+    default_ttl_seconds: int = Field(default=7 * 24 * 3600, gt=0)
+
+
+class TokenAuditSettings(BaseModel):
+    enabled: bool = True
+    include_username: bool = True
+
+
+class SecuritySettings(BaseModel):
+    token: SecurityTokenSettings = SecurityTokenSettings()
+    revocation: SecurityRevocationSettings = SecurityRevocationSettings()
+    audit: TokenAuditSettings = TokenAuditSettings()
 
 
 class EncryptionSettings(BaseModel):
@@ -194,6 +226,7 @@ class AppSettings(BaseSettings):
         env_file=".env",
         extra="allow",
         populate_by_name=True,
+        env_nested_delimiter="__",
     )
 
     env: str = "dev"
@@ -205,6 +238,7 @@ class AppSettings(BaseSettings):
     database: DatabaseSettings = DatabaseSettings()
     cache: CacheSettings = CacheSettings()
     monitoring: MonitoringSettings = MonitoringSettings()
+    security: SecuritySettings = SecuritySettings()
     encryption: EncryptionSettings = Field(default_factory=EncryptionSettings, alias="encryption_config")
     tasks: Dict[str, Any] = Field(default_factory=dict)
 

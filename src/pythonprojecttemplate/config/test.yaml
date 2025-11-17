@@ -79,9 +79,23 @@ api:
   # API版本（从公共配置获取）
   api_version: v1
 
-  # 测试环境密钥
-  secret_key: test-secret-key-for-testing-only
-
-  # 测试环境令牌过期时间设置为较短
-  access_token_expire_minutes: 15  # 15分钟
-  refresh_token_expire_days: 2  # 2天
+security:
+  token:
+    secret_key: test-secret-key-for-testing-only
+    algorithm: HS256
+    access_token_expire_minutes: 15
+    refresh_token_expire_days: 2
+  revocation:
+    backend: memory
+    key_prefix: ppt:test:security
+    default_ttl_seconds: 172800
+    redis:
+      host: localhost
+      port: 6379
+      db: 15
+      username:
+      password:
+      ssl: false
+  audit:
+    enabled: true
+    include_username: true

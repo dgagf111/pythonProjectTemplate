@@ -101,11 +101,23 @@ api:
   # API版本（从公共配置获取）
   api_version: v1
 
-  # 生产环境密钥（从环境变量获取）
-  secret_key: ${SECRET_KEY}
-
-  # 访问令牌过期时间，生产环境可能需要更短的过期时间
-  access_token_expire_minutes: 30  # 30分钟
-
-  # 刷新令牌过期时间，生产环境也可能需要更短的过期时间（单位：天）
-  refresh_token_expire_days: 3
+security:
+  token:
+    secret_key: ${SECRET_KEY}
+    algorithm: HS256
+    access_token_expire_minutes: 30
+    refresh_token_expire_days: 3
+  revocation:
+    backend: redis
+    key_prefix: ppt:security
+    default_ttl_seconds: 259200
+    redis:
+      host: ${REDIS_HOST:-redis}
+      port: ${REDIS_PORT:-6379}
+      db: 2
+      username:
+      password:
+      ssl: false
+  audit:
+    enabled: true
+    include_username: true

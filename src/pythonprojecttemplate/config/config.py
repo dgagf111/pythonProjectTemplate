@@ -77,6 +77,9 @@ class Config:
     def get_api_config(self) -> Dict[str, Any]:
         return self._settings.api.model_dump()
 
+    def get_security_config(self) -> Dict[str, Any]:
+        return self._settings.security.model_dump()
+
     def get_time_zone(self) -> str:
         return self._settings.common.time_zone
 

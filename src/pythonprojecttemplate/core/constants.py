@@ -30,12 +30,14 @@ class Constants:
         # API配置常量
         api_config = settings.api
 
-        # JWT相关常量
-        self.JWT_SECRET_KEY = api_config.secret_key or "default_secret_key_for_development"
-        self.JWT_ALGORITHM = "HS256"
+        security_config = settings.security
 
-        self.ACCESS_TOKEN_EXPIRE_MINUTES = api_config.access_token_expire_minutes
-        self.REFRESH_TOKEN_EXPIRE_DAYS = api_config.refresh_token_expire_days
+        # JWT相关常量
+        self.JWT_SECRET_KEY = security_config.token.secret_key or "default_secret_key_for_development"
+        self.JWT_ALGORITHM = security_config.token.algorithm
+
+        self.ACCESS_TOKEN_EXPIRE_MINUTES = security_config.token.access_token_expire_minutes
+        self.REFRESH_TOKEN_EXPIRE_DAYS = security_config.token.refresh_token_expire_days
         
         # 数据库常量
         self.DB_POOL_SIZE = 10
