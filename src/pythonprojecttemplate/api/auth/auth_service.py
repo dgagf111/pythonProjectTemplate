@@ -20,6 +20,7 @@ from pythonprojecttemplate.api.exception.custom_exceptions import (
     IncorrectCredentialsException,
     DatabaseException
 )
+from pythonprojecttemplate.config.settings import settings
 from pythonprojecttemplate.log.logHelper import get_logger
 
 logger = get_logger()
@@ -31,7 +32,8 @@ cache_keys = CacheKeysManager()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # 创建OAuth2密码承载流程
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+API_TOKEN_PATH = f"/api/{settings.common.api_version}/token"
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=API_TOKEN_PATH)
 
 # 使用缓存管理器实例
 cache_manager = get_cache_manager()
@@ -180,6 +182,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: AsyncSe
     """
     try:
         payload = verify_token(token)
+        token_type = payload.get("type")
+        if token_type and token_type != "access":
+            raise InvalidTokenException(detail="Invalid token type")
         username: str = payload.get("sub")
         if username is None:
             raise InvalidTokenException()

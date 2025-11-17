@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import HTTPException, status
 from pythonprojecttemplate.api.http_status import HTTPStatus
 
@@ -23,8 +25,9 @@ class UserNotFoundException(APIException):
 
 # 新增的异常类型
 class IncorrectCredentialsException(APIException):
-    def __init__(self):
-        super().__init__(status_code=HTTPStatus.UNAUTHORIZED.code, detail="Incorrect username or password")
+    def __init__(self, detail: str | None = None):
+        message = detail or "Incorrect username or password"
+        super().__init__(status_code=HTTPStatus.UNAUTHORIZED.code, detail=message)
 
 class InvalidTokenTypeException(APIException):
     def __init__(self):

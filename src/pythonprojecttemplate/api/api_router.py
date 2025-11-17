@@ -25,6 +25,14 @@ API_PREFIX = f"/api/{API_VERSION}"
 
 api_router = APIRouter(prefix=API_PREFIX)
 
+
+def _build_token_response(tokens: dict) -> TokenResponse:
+    return TokenResponse(
+        access_token=tokens["access_token"],
+        token_type=tokens.get("token_type", "bearer"),
+        refresh_token=tokens["refresh_token"],
+    )
+
 #######################
 # 实际使用的生产接口 #
 #######################
@@ -57,11 +65,7 @@ async def login_for_access_token(
 
         logger.info(f"用户登录成功: {form_data.username}")
         return ResultVO.success(
-            data=TokenResponse(
-                access_token=tokens["access_token"],
-                token_type="bearer",
-                refresh_token=tokens["refresh_token"]
-            ),
+            data=_build_token_response(tokens),
             message="登录成功"
         )
     except (InvalidCredentialsException, IncorrectCredentialsException) as e:
@@ -188,17 +192,27 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Async
     - 其他异常: 记录到日志并返回通用错误信息
     """
     try:
-        user = await authenticate_user(session, form_data.username, form_data.password)
-        if not user:
+        tokens = await authenticate_user(session, form_data.username, form_data.password)
+        if not tokens:
             raise IncorrectCredentialsException(detail="Incorrect username or password")
-        access_token, refresh_token = create_tokens(user.username)
-        return ResultVO.success(data={"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"})
+        return ResultVO.success(data=_build_token_response(tokens))
+    except (InvalidCredentialsException, IncorrectCredentialsException) as exc:
+        logger.warning(f"登录失败: {form_data.username}, 原因: {exc.detail}")
+        return ResultVO.error(
+            code=HTTPStatus.UNAUTHORIZED.code,
+            message=exc.detail or "Invalid credentials"
+        )
     except Exception as e:
-        logger.error(f"Error logging in: {str(e)}")
+        logger.error(f"Error logging in: {str(e)}", exc_info=True)
         return ResultVO.error(code=HTTPStatus.INTERNAL_SERVER_ERROR.code, message="Invalid credentials")
 
 @api_router.post("/generate_permanent_token")
-async def generate_token(user_id: int, provider: str, session: AsyncSession = Depends(get_db)):
+async def generate_token(
+    user_id: int,
+    provider: str,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
     """生成永久令牌
 
     此接口用于生成长期有效的令牌,通常用于第三方应用或服务集成。
@@ -220,6 +234,12 @@ async def generate_token(user_id: int, provider: str, session: AsyncSession = De
         - data (None): 失败时data为空
     """
     try:
+        if current_user.user_id != user_id:
+            return ResultVO.error(
+                code=HTTPStatus.FORBIDDEN.code,
+                message="Forbidden: mismatched user_id"
+            )
+
         token = await generate_permanent_token(session, user_id, provider)
         return ResultVO.success(data={"permanent_token": token})
     except Exception as e:
@@ -249,4 +269,3 @@ async def third_party_test(current_app: str = Depends(get_current_app)):
 @api_router.get("/test_exception")
 async def test_exception_route():
     raise APIException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR.code, detail="测试异常")
-
