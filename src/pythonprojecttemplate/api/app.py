@@ -22,7 +22,7 @@ logger = get_logger()
 async def lifespan(app: FastAPI):
     logger.info("Starting scheduler and monitoring centers")
     scheduler_center.start()
-    monitoring_center.start()
+    await monitoring_center.start()
 
     async with AsyncExitStack() as stack:
         await stack.enter_async_context(module_lifespan(app))
@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
         finally:
             logger.info("Shutting down background services")
             scheduler_center.shutdown()
-            monitoring_center.shutdown()
+            await monitoring_center.shutdown()
 
 
 def create_application() -> FastAPI:

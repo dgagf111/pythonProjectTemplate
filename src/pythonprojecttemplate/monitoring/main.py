@@ -1,8 +1,8 @@
+import asyncio
 import socket
-import threading
-from wsgiref.simple_server import make_server
+from contextlib import suppress
 
-from prometheus_client import make_wsgi_app
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from pythonprojecttemplate.config.settings import settings
 from pythonprojecttemplate.log.logHelper import get_logger
@@ -16,43 +16,57 @@ logger = get_logger()
 class MonitoringCenter:
     def __init__(self):
         self.running = False
-        self.alert_thread = None
-        self.should_exit = threading.Event()
-        self.http_server = None
-        self.http_thread = None
+        self.alert_task: asyncio.Task | None = None
+        self._alert_shutdown = asyncio.Event()
+        self._metrics_server: asyncio.AbstractServer | None = None
+        self._metrics_task: asyncio.Task | None = None
         self.metrics_port = settings.monitoring.prometheus_port
+        self._interval = settings.monitoring.interval_seconds
 
-    def start(self, test_mode: bool = False):
+    async def start(self, test_mode: bool = False):
         if self.running:
             logger.warning("监控中心已经在运行")
             return
 
-        logger.info("启动监控模块...")
+        logger.info("启动监控模块（asyncio 模式）")
+
         try:
             port = self._select_port(settings.monitoring.prometheus_port)
-            self._start_metrics_server(port)
             setup_metrics()
+            await self._start_metrics_server(port)
+
             self.running = True
-            self.should_exit.clear()
+            self._alert_shutdown = asyncio.Event()
 
             if not test_mode:
-                self.alert_thread = threading.Thread(target=self._run_alerting, daemon=True)
-                self.alert_thread.start()
-            logger.info(f"监控模块已启动，Prometheus 指标可在 http://localhost:{self.metrics_port} 访问")
+                self.alert_task = asyncio.create_task(self._run_alerting())
+                logger.info("监控告警异步任务已启动")
+
+            logger.info("监控模块已启动，Prometheus 指标地址 http://127.0.0.1:%s", self.metrics_port)
         except Exception as e:
             logger.error(f"监控模块启动失败: {e}", exc_info=True)
+            self.running = False
+            if test_mode:
+                raise
 
     def _select_port(self, preferred_port: int) -> int:
         if self._is_port_available(preferred_port):
             return preferred_port
         return self._find_available_port()
 
-    def _start_metrics_server(self, port: int) -> None:
-        app = make_wsgi_app()
-        self.http_server = make_server("127.0.0.1", port, app)
+    async def _start_metrics_server(self, port: int) -> None:
+        try:
+            self._metrics_server = await asyncio.start_server(
+                self._handle_metrics_request,
+                host="127.0.0.1",
+                port=port,
+            )
+        except OSError as exc:
+            logger.error("无法启动指标服务: %s", exc)
+            raise
+
         self.metrics_port = port
-        self.http_thread = threading.Thread(target=self.http_server.serve_forever, daemon=True)
-        self.http_thread.start()
+        self._metrics_task = asyncio.create_task(self._metrics_server.serve_forever())
 
     def _is_port_available(self, port):
         """检查端口是否可用"""
@@ -71,36 +85,65 @@ class MonitoringCenter:
                 return port
         return settings.monitoring.prometheus_port
 
-    def _run_alerting(self):
+    async def _handle_metrics_request(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        try:
+            with suppress(asyncio.IncompleteReadError):
+                await reader.readuntil(b"\r\n\r\n")
+        except asyncio.LimitOverrunError:
+            logger.warning("Metrics request header too large")
+
+        body = generate_latest()
+        response = (
+            b"HTTP/1.1 200 OK\r\n"
+            + f"Content-Type: {CONTENT_TYPE_LATEST}\r\n".encode()
+            + f"Content-Length: {len(body)}\r\n".encode()
+            + b"Connection: close\r\n\r\n"
+            + body
+        )
+        writer.write(response)
+        await writer.drain()
+        writer.close()
+        await writer.wait_closed()
+
+    async def _run_alerting(self):
         setup_alerting()
-        while not self.should_exit.is_set():
+        logger.info("监控告警循环启动，间隔 %s 秒", self._interval)
+        while not self._alert_shutdown.is_set():
             try:
                 check_cpu_usage()
                 check_memory_usage()
             except Exception as e:
                 logger.error(f"告警检查失败: {e}")
 
-            if self.should_exit.wait(timeout=60):
-                break
+            try:
+                await asyncio.wait_for(self._alert_shutdown.wait(), timeout=self._interval)
+            except asyncio.TimeoutError:
+                continue
 
-    def shutdown(self):
+        logger.info("监控告警循环已停止")
+
+    async def shutdown(self):
         logger.info("正在关闭监控模块...")
-        self.should_exit.set()
+        self._alert_shutdown.set()
         self.running = False
 
-        if self.alert_thread and self.alert_thread.is_alive():
-            self.alert_thread.join(timeout=2)
+        if self.alert_task:
+            self.alert_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await self.alert_task
+        self.alert_task = None
 
-        if self.http_server:
-            self.http_server.shutdown()
-            self.http_server.server_close()
-            self.http_server = None
+        if self._metrics_server:
+            self._metrics_server.close()
+            await self._metrics_server.wait_closed()
+            self._metrics_server = None
 
-        if self.http_thread and self.http_thread.is_alive():
-            self.http_thread.join(timeout=2)
-        self.http_thread = None
-        self.alert_thread = None
-        self.should_exit = threading.Event()
+        if self._metrics_task:
+            self._metrics_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await self._metrics_task
+        self._metrics_task = None
+
         logger.info("监控模块已关闭")
 
 
