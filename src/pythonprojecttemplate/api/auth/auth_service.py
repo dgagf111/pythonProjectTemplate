@@ -12,6 +12,7 @@ from pythonprojecttemplate.cache.cache_manager import get_cache_manager
 from pythonprojecttemplate.db.session import AsyncSessionLocal, AsyncSession
 from ..models.auth_models import User, Token
 from .utils import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from .token_types import TokenType
 from pythonprojecttemplate.cache.cache_keys_manager import CacheKeysManager
 from pythonprojecttemplate.api.exception.custom_exceptions import (
     InvalidTokenException,
@@ -160,6 +161,7 @@ def create_access_token(data: dict, username: str, expires_delta: Optional[timed
         expire = datetime.now(UTC) + expires_delta
     else:
         expire = datetime.now(UTC) + timedelta(minutes=15)
+    to_encode.setdefault("type", TokenType.ACCESS.value)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     
@@ -182,8 +184,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: AsyncSe
     """
     try:
         payload = verify_token(token)
-        token_type = payload.get("type")
-        if token_type and token_type != "access":
+        token_type = TokenType.from_payload(payload)
+        if token_type != TokenType.ACCESS:
             raise InvalidTokenException(detail="Invalid token type")
         username: str = payload.get("sub")
         if username is None:
