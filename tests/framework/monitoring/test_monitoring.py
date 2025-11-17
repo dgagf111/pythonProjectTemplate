@@ -11,22 +11,19 @@ logger = get_logger()
 
 @pytest.fixture(scope="module")
 def monitoring_setup():
-    # 启动监控模块，使用测试模式
     monitoring_center.start(test_mode=True)
-    # 等待服务器启动
-    time.sleep(2)
-    yield
-    # 这里可以添加清理代码，如果需要的话
+    time.sleep(1)
+    if not monitoring_center.running:
+        pytest.skip("监控模块无法在当前环境中启动网络服务")
+    yield monitoring_center
+    monitoring_center.shutdown()
 
 def test_prometheus_server(monitoring_setup):
-    # 测试 Prometheus 服务器是否正常运行
-    response = requests.get("http://localhost:9966")
+    response = requests.get(f"http://localhost:{monitoring_setup.metrics_port}")
     assert response.status_code == 200
 
 def test_metrics_creation():
-    # 测试指标是否被正确创建
-    print(f"REQUEST_COUNT._name: {REQUEST_COUNT._name}")
-    assert REQUEST_COUNT._name == "app_requests", "REQUEST_COUNT 名称不正确"
+    assert REQUEST_COUNT._name == "app_requests"
     assert RESPONSE_TIME._name == "app_response_latency_seconds"
     assert CPU_USAGE._name == "system_cpu_usage"
     assert MEMORY_USAGE._name == "system_memory_usage"

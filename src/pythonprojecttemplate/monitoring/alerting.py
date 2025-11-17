@@ -1,4 +1,3 @@
-import time
 from pythonprojecttemplate.log.logHelper import get_logger
 
 logger = get_logger()
@@ -18,7 +17,5 @@ def check_memory_usage(threshold=80):
 
 def setup_alerting():
     logger.info("设置报警系统...")
-    while True:
-        check_cpu_usage()
-        check_memory_usage()
-        time.sleep(60)  # 每分钟检查一次
+    check_cpu_usage()
+    check_memory_usage()
