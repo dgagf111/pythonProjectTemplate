@@ -11,6 +11,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from .constants import constants, cache_keys, error_codes, messages
+from pythonprojecttemplate.api.auth.token_types import TokenType
 from .logging.logger import get_logger
 from .exceptions import InvalidTokenException, TokenRevokedException
 
@@ -61,7 +62,7 @@ class JWTUtils:
         if expires_delta is None:
             expires_delta = timedelta(minutes=constants.ACCESS_TOKEN_EXPIRE_MINUTES)
         
-        data = {"sub": username, "type": "access"}
+        data = {"sub": username, "type": TokenType.ACCESS.value}
         return JWTUtils.create_token(data, expires_delta)
     
     @staticmethod
@@ -79,7 +80,7 @@ class JWTUtils:
         if expires_delta is None:
             expires_delta = timedelta(days=constants.REFRESH_TOKEN_EXPIRE_DAYS)
         
-        data = {"sub": username, "type": "refresh"}
+        data = {"sub": username, "type": TokenType.REFRESH.value}
         return JWTUtils.create_token(data, expires_delta)
     
     @staticmethod

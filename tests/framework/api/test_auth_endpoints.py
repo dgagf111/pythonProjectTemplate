@@ -1,9 +1,15 @@
+import asyncio
+from types import SimpleNamespace
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 import pythonprojecttemplate.api.api_router as api_module
-from pythonprojecttemplate.api.auth.auth_service import get_db
+import pythonprojecttemplate.api.auth.auth_service as auth_service
+from pythonprojecttemplate.api.auth.auth_service import get_current_user, get_db
+from pythonprojecttemplate.api.auth.token_service import create_tokens, revoke_tokens
+from pythonprojecttemplate.api.exception.custom_exceptions import InvalidTokenException
 
 
 @pytest.fixture()
@@ -54,3 +60,39 @@ def test_login_endpoint_uses_authenticate_user_tokens(client, monkeypatch):
         "refresh_token": "login-refresh",
         "token_type": "bearer",
     }
+
+
+def test_refresh_token_rejected_for_user_context(monkeypatch):
+    async def fake_get_user(session, username):
+        return SimpleNamespace(username=username, user_id=1)
+
+    monkeypatch.setattr(auth_service, "get_user", fake_get_user)
+
+    _, refresh_token = create_tokens("alice")
+
+    async def attempt():
+        with pytest.raises(InvalidTokenException):
+            await auth_service.get_current_user(token=refresh_token, session=None)
+
+    try:
+        asyncio.run(attempt())
+    finally:
+        revoke_tokens("alice")
+
+
+def test_generate_permanent_token_enforces_user_boundary(client):
+    def fake_current_user():
+        return SimpleNamespace(user_id=2, username="owner")
+
+    client.app.dependency_overrides[get_current_user] = fake_current_user
+    try:
+        response = client.post(
+            f"{api_module.API_PREFIX}/generate_permanent_token",
+            params={"user_id": 1, "provider": "cli"},
+        )
+        assert response.status_code == 403
+        payload = response.json()
+        assert payload["code"] == 403
+        assert payload["message"] == "Forbidden: mismatched user_id"
+    finally:
+        client.app.dependency_overrides.pop(get_current_user, None)
