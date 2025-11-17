@@ -33,7 +33,18 @@ class Constants:
         security_config = settings.security
 
         # JWT相关常量
-        self.JWT_SECRET_KEY = security_config.token.secret_key or "default_secret_key_for_development"
+        secret_key = (security_config.token.secret_key or "").strip()
+        insecure_placeholders = {
+            "",
+            "change-me",
+            "your-secret-key-for-development",
+            "default_secret_key_for_development",
+        }
+        if secret_key in insecure_placeholders:
+            raise ValueError(
+                "JWT密钥未配置或仍为不安全默认值，请设置 PPT_SECURITY__TOKEN__SECRET_KEY 为随机字符串"
+            )
+        self.JWT_SECRET_KEY = secret_key
         self.JWT_ALGORITHM = security_config.token.algorithm
 
         self.ACCESS_TOKEN_EXPIRE_MINUTES = security_config.token.access_token_expire_minutes
