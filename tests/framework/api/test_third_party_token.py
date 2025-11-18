@@ -100,23 +100,33 @@ async def test_generate_permanent_token(session):
     token = await generate_permanent_token(session, user.user_id, "test_provider")
 
     result = await session.execute(
-        select(Token).where(Token.user_id == user.user_id, Token.token_type == 1)
+        select(ThirdPartyToken).where(
+            ThirdPartyToken.user_id == user.user_id,
+            ThirdPartyToken.provider == "test_provider",
+        )
     )
     stored_token = result.scalar_one()
-    assert stored_token.token == token
+    assert stored_token.third_party_token == token
+    assert stored_token.provider == "test_provider"
 
 
 async def test_third_party_access_with_valid_token(session):
     user = await setup_test_user(session)
     token = await generate_permanent_token(session, user.user_id, "test_provider")
 
-    response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
+    response = client.get(
+        f"{API_PREFIX}/third_party_test",
+        headers={"X-API-Key": token, "X-API-Provider": "test_provider"},
+    )
     assert response.status_code == 200
     assert response.json()["message"] == "Third party access successful"
 
 
 async def test_third_party_access_with_invalid_token():
-    response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": "invalid_token"})
+    response = client.get(
+        f"{API_PREFIX}/third_party_test",
+        headers={"X-API-Key": "invalid_token", "X-API-Provider": "test_provider"},
+    )
     assert response.status_code == 401
 
 
@@ -125,21 +135,41 @@ async def test_third_party_access_without_token():
     assert response.status_code == 401
 
 
+async def test_third_party_access_with_wrong_provider(session):
+    user = await setup_test_user(session)
+    token = await generate_permanent_token(session, user.user_id, "test_provider")
+
+    response = client.get(
+        f"{API_PREFIX}/third_party_test",
+        headers={"X-API-Key": token, "X-API-Provider": "other"},
+    )
+    assert response.status_code == 401
+
+
 async def test_revoke_permanent_token(session):
     user = await setup_test_user(session)
     token = await generate_permanent_token(session, user.user_id, "test_provider")
 
-    response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
+    response = client.get(
+        f"{API_PREFIX}/third_party_test",
+        headers={"X-API-Key": token, "X-API-Provider": "test_provider"},
+    )
     assert response.status_code == 200
 
     result = await session.execute(
-        select(Token).where(Token.token == token, Token.token_type == 1)
+        select(ThirdPartyToken).where(
+            ThirdPartyToken.third_party_token == token,
+            ThirdPartyToken.provider == "test_provider",
+        )
     )
     stored_token = result.scalar_one()
     stored_token.state = -1
     await session.commit()
 
-    response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
+    response = client.get(
+        f"{API_PREFIX}/third_party_test",
+        headers={"X-API-Key": token, "X-API-Provider": "test_provider"},
+    )
     assert response.status_code == 401
 
 
@@ -147,20 +177,33 @@ async def test_permanent_token_expiration(session):
     user = await setup_test_user(session)
     token = await generate_permanent_token(session, user.user_id, "test_provider")
 
-    response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
+    response = client.get(
+        f"{API_PREFIX}/third_party_test",
+        headers={"X-API-Key": token, "X-API-Provider": "test_provider"},
+    )
     assert response.status_code == 200
 
     result = await session.execute(
-        select(Token).where(Token.token == token, Token.token_type == 1)
+        select(ThirdPartyToken).where(
+            ThirdPartyToken.third_party_token == token,
+            ThirdPartyToken.provider == "test_provider",
+        )
     )
     stored_token = result.scalar_one()
-    assert stored_token.expires_at.replace(tzinfo=TIME_ZONE) > (
+
+    expires_at = stored_token.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=TIME_ZONE)
+
+    assert expires_at > (
         datetime.now(TIME_ZONE) + timedelta(days=365 * 999)
     )
 
     stored_token.expires_at = datetime.now(TIME_ZONE) - timedelta(days=1)
     await session.commit()
 
-    response = client.get(f"{API_PREFIX}/third_party_test", headers={"X-API-Key": token})
+    response = client.get(
+        f"{API_PREFIX}/third_party_test",
+        headers={"X-API-Key": token, "X-API-Provider": "test_provider"},
+    )
     assert response.status_code == 401
-

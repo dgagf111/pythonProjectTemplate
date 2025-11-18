@@ -21,7 +21,7 @@ from pythonprojecttemplate.api.exception.custom_exceptions import (
 )
 from pythonprojecttemplate.config.settings import settings
 from pythonprojecttemplate.log.logHelper import get_logger
-from ..models.auth_models import Token
+from ..models.auth_models import ThirdPartyToken
 from .utils import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
@@ -120,32 +120,37 @@ def revoke_tokens(username: str) -> None:
 async def generate_permanent_token(session: AsyncSession, user_id: int, provider: str) -> str:
     """生成永久token并保存到数据库"""
     token = secrets.token_urlsafe(32)
-    new_token = Token(
+    expires_at = datetime.now(TIME_ZONE) + timedelta(days=365 * 1000)
+    new_token = ThirdPartyToken(
         user_id=user_id,
-        token=token,
-        token_type=1,  # 1 表示用户API调用的token
-        expires_at=datetime.now(TIME_ZONE) + timedelta(days=365 * 1000),
-        state=0,  # 正常状态
+        provider=provider,
+        third_party_token=token,
+        expires_at=expires_at,
+        state=0,
     )
     session.add(new_token)
     await session.commit()
     return token
 
 
-async def verify_permanent_token(session: AsyncSession, token: str) -> bool:
+async def verify_permanent_token(session: AsyncSession, token: str, provider: str) -> bool:
     """验证永久token"""
     try:
         result = await session.execute(
-            select(Token).where(
-                Token.token == token,
-                Token.token_type == 1,
-                Token.state == 0,
+            select(ThirdPartyToken).where(
+                ThirdPartyToken.third_party_token == token,
+                ThirdPartyToken.provider == provider,
+                ThirdPartyToken.state == 0,
             )
         )
         stored_token = result.scalar_one_or_none()
 
         if not stored_token:
-            logger.debug(f"Token not found: {token[:10]}...")
+            logger.debug(
+                "Token not found for provider %s: %s...",
+                provider,
+                token[:10],
+            )
             return False
 
         expires_at = stored_token.expires_at
@@ -155,7 +160,12 @@ async def verify_permanent_token(session: AsyncSession, token: str) -> bool:
         is_valid = expires_at > datetime.now(TIME_ZONE)
 
         if not is_valid:
-            logger.warning(f"Token expired: {token[:10]}..., expires_at: {expires_at}")
+            logger.warning(
+                "Token expired for provider %s: %s..., expires_at: %s",
+                provider,
+                token[:10],
+                expires_at,
+            )
 
         return is_valid
 

@@ -224,11 +224,18 @@ def get_password_hash(password: str) -> str:
 from .token_service import verify_permanent_token
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+api_provider_header = APIKeyHeader(name="X-API-Provider", auto_error=False)
 
-async def get_current_app(api_key: str = Depends(api_key_header), session: AsyncSession = Depends(get_db)):
+async def get_current_app(
+    api_key: str = Depends(api_key_header),
+    provider: str = Depends(api_provider_header),
+    session: AsyncSession = Depends(get_db),
+):
     """验证API密钥"""
     if not api_key:
         raise InvalidCredentialsException(detail="API key is missing")
-    if not await verify_permanent_token(session, api_key):
-        raise InvalidTokenException(detail="Invalid API key")
-    return api_key
+    if not provider:
+        raise InvalidCredentialsException(detail="API provider is missing")
+    if not await verify_permanent_token(session, api_key, provider):
+        raise InvalidTokenException(detail="Invalid API key or provider")
+    return provider
