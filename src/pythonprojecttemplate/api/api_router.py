@@ -3,17 +3,16 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from .auth.auth_service import authenticate_user, get_current_user, get_db, get_current_app
 from .auth.token_service import create_tokens, refresh_access_token, revoke_tokens, generate_permanent_token
-from .auth.token_types import TokenType
 from pythonprojecttemplate.api.models.token_response_model import TokenResponse
 from pythonprojecttemplate.api.models.auth_models import User
 from pythonprojecttemplate.config.settings import settings
-from .auth.token_service import verify_token
 from pythonprojecttemplate.log.logHelper import get_logger
 from pythonprojecttemplate.api.exception.custom_exceptions import (
     APIException,
     IncorrectCredentialsException,
     InvalidCredentialsException,
-    InvalidTokenException
+    InvalidTokenException,
+    TokenRevokedException,
 )
 from pythonprojecttemplate.api.models.result_vo import ResultVO
 from pythonprojecttemplate.api.http_status import HTTPStatus
@@ -82,6 +81,9 @@ async def login_for_access_token(
             message="登录失败，请稍后重试"
         )
 
+REFRESH_TOKEN_INVALID_MESSAGE = "刷新令牌无效或已过期，请重新登录"
+
+
 @api_router.post("/refresh")
 async def refresh_token(refresh_token: str = Body(..., embed=True)):
     """
@@ -110,14 +112,26 @@ async def refresh_token(refresh_token: str = Body(..., embed=True)):
     - 其他异常: 记录到日志并返回通用错误信息
     """
     try:
-        payload = verify_token(refresh_token)
-        if TokenType.from_payload(payload) != TokenType.REFRESH:
-            raise InvalidTokenException(detail="Invalid token type")
         new_access_token, new_refresh_token = refresh_access_token(refresh_token)
-        return ResultVO.success(data=TokenResponse(access_token=new_access_token, token_type="bearer", refresh_token=new_refresh_token))
-    except Exception as e:
-        logger.error(f"Error refreshing token: {str(e)}")
-        return ResultVO.error(code=HTTPStatus.INTERNAL_SERVER_ERROR.code, message="Invalid or expired refresh token")
+        token_response = TokenResponse(
+            access_token=new_access_token,
+            token_type="bearer",
+            refresh_token=new_refresh_token,
+        )
+        return ResultVO.success(data=token_response)
+    except (InvalidTokenException, TokenRevokedException) as exc:
+        logger.warning("刷新令牌失败: %s", exc.detail)
+        return ResultVO.error(code=HTTPStatus.UNAUTHORIZED.code, message=REFRESH_TOKEN_INVALID_MESSAGE)
+    except APIException as exc:
+        logger.warning("刷新令牌发生业务异常: %s", exc.detail)
+        status_code = getattr(exc, "status_code", HTTPStatus.INTERNAL_SERVER_ERROR.code)
+        return ResultVO.error(code=status_code, message=str(exc.detail))
+    except Exception:
+        logger.error("刷新令牌出现未知错误", exc_info=True)
+        return ResultVO.error(
+            code=HTTPStatus.INTERNAL_SERVER_ERROR.code,
+            message="刷新令牌失败，请稍后重试",
+        )
 
 @api_router.post("/logout")
 async def logout(current_user: User = Depends(get_current_user)):

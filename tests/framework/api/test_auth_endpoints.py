@@ -9,7 +9,10 @@ import pythonprojecttemplate.api.api_router as api_module
 import pythonprojecttemplate.api.auth.auth_service as auth_service
 from pythonprojecttemplate.api.auth.auth_service import get_current_user, get_db
 from pythonprojecttemplate.api.auth.token_service import create_tokens, revoke_tokens
-from pythonprojecttemplate.api.exception.custom_exceptions import InvalidTokenException
+from pythonprojecttemplate.api.exception.custom_exceptions import (
+    InvalidTokenException,
+    TokenRevokedException,
+)
 
 
 @pytest.fixture()
@@ -96,3 +99,56 @@ def test_generate_permanent_token_enforces_user_boundary(client):
         assert payload["message"] == "Forbidden: mismatched user_id"
     finally:
         client.app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_refresh_token_success(client, monkeypatch):
+    def fake_refresh(token):
+        assert token == "valid-refresh"
+        return "new-access", "new-refresh"
+
+    monkeypatch.setattr(api_module, "refresh_access_token", fake_refresh)
+
+    response = client.post(
+        f"{api_module.API_PREFIX}/refresh",
+        json={"refresh_token": "valid-refresh"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["code"] == 200
+    assert payload["data"] == {
+        "access_token": "new-access",
+        "token_type": "bearer",
+        "refresh_token": "new-refresh",
+    }
+
+
+def test_refresh_token_invalid_returns_unauthorized(client, monkeypatch):
+    def fake_refresh(token):
+        raise InvalidTokenException(detail="Invalid refresh token")
+
+    monkeypatch.setattr(api_module, "refresh_access_token", fake_refresh)
+
+    response = client.post(
+        f"{api_module.API_PREFIX}/refresh",
+        json={"refresh_token": "invalid"},
+    )
+    assert response.status_code == 401
+    payload = response.json()
+    assert payload["code"] == 401
+    assert payload["message"] == api_module.REFRESH_TOKEN_INVALID_MESSAGE
+
+
+def test_refresh_token_revoked_returns_unauthorized(client, monkeypatch):
+    def fake_refresh(token):
+        raise TokenRevokedException()
+
+    monkeypatch.setattr(api_module, "refresh_access_token", fake_refresh)
+
+    response = client.post(
+        f"{api_module.API_PREFIX}/refresh",
+        json={"refresh_token": "revoked"},
+    )
+    assert response.status_code == 401
+    payload = response.json()
+    assert payload["code"] == 401
+    assert payload["message"] == api_module.REFRESH_TOKEN_INVALID_MESSAGE
