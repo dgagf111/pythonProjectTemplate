@@ -4,11 +4,11 @@
 提供统一的工具函数，减少重复代码。
 """
 
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any, Union, AsyncGenerator
 from datetime import datetime, timedelta, UTC
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .constants import constants, cache_keys, error_codes, messages
 from pythonprojecttemplate.api.auth.token_types import TokenType
@@ -138,36 +138,27 @@ class DatabaseUtils:
     """数据库工具类"""
     
     @staticmethod
-    def get_db_session():
+    async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
         """
         获取数据库会话
         
-        这是一个生成器函数，用于依赖注入
+        这是一个异步生成器函数，用于依赖注入
         """
         try:
-            # 先尝试从新结构导入
-            from ...core.database.mysql import MySQL_Database
+            from pythonprojecttemplate.db.session import AsyncSessionLocal
         except ImportError:
-            try:
-                # 再尝试从原结构导入
-                from ...db.mysql.mysql import MySQL_Database
-            except ImportError:
-                # 最后尝试相对导入
-                import sys
-                import os
-                sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
-                from pythonprojecttemplate.db.mysql.mysql import MySQL_Database
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+            from pythonprojecttemplate.db.session import AsyncSessionLocal
         
-        db = MySQL_Database()
-        try:
-            session = db.get_session()
-            yield session
-        except Exception as e:
-            logger.error(f"Database session error: {e}")
-            session.rollback()
-            raise
-        finally:
-            session.close()
+        async with AsyncSessionLocal() as session:
+            try:
+                yield session
+            except Exception as e:
+                logger.error("Database session error: %s", e, exc_info=True)
+                await session.rollback()
+                raise
 
 class CacheUtils:
     """缓存工具类"""
