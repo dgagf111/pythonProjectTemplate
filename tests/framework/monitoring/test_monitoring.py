@@ -72,19 +72,29 @@ def test_system_metrics_update(mock_memory, mock_cpu):
 
 @patch("pythonprojecttemplate.monitoring.alerting.logger.warning")
 def test_alerting(mock_logger):
-    assert not check_cpu_usage(threshold=90)
-    mock_logger.assert_not_called()
+    with patch("psutil.cpu_percent", return_value=85.0), patch(
+        "psutil.virtual_memory"
+    ) as mock_memory:
+        mock_memory.return_value.percent = 75.0
 
-    assert check_cpu_usage(threshold=80)
-    mock_logger.assert_called_with("CPU 使用率过高: 85%")
+        cpu_usage = check_cpu_usage(threshold=90)
+        assert cpu_usage == 85.0
+        mock_logger.assert_not_called()
 
-    mock_logger.reset_mock()
+        mock_logger.reset_mock()
+        cpu_usage = check_cpu_usage(threshold=80)
+        assert cpu_usage == 85.0
+        mock_logger.assert_called_with("CPU 使用率过高: %s%%", 85.0)
 
-    check_memory_usage(threshold=80)
-    mock_logger.assert_not_called()
+        mock_logger.reset_mock()
+        memory_usage = check_memory_usage(threshold=80)
+        assert memory_usage == 75.0
+        mock_logger.assert_not_called()
 
-    check_memory_usage(threshold=70)
-    mock_logger.assert_called_with("内存使用率过高: 75%")
+        mock_logger.reset_mock()
+        memory_usage = check_memory_usage(threshold=70)
+        assert memory_usage == 75.0
+        mock_logger.assert_called_with("内存使用率过高: %s%%", 75.0)
 
 
 def test_monitoring_reload_without_leaks():
