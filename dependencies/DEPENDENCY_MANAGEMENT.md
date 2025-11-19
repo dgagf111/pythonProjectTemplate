@@ -199,7 +199,7 @@ readme = "README.md"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.12"
 fastapi = "^0.112.2"
 uvicorn = "^0.30.6"
 sqlalchemy = "^2.0.32"

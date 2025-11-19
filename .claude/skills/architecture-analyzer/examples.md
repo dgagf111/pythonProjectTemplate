@@ -15,7 +15,7 @@
 #### 项目概览
 - **技术栈**: FastAPI 0.112.0, SQLAlchemy 2.0 (Async), MySQL, Redis, pytest
 - **架构风格**: 分层架构 + 仓储模式 + 服务层
-- **Python 版本**: 3.9+
+- **Python 版本**: 3.12+
 
 #### 项目结构
 ```

@@ -46,12 +46,12 @@ check_python_version() {
     log_info "检查 Python 版本..."
     
     if ! command -v python3 &> /dev/null; then
-        log_error "Python 3 未安装！请先安装 Python 3.8+"
+        log_error "Python 3 未安装！请先安装 Python 3.12+"
         exit 1
     fi
     
     python_version=$(python3 -c "import sys; print('.'.join(map(str, sys.version_info[:2])))")
-    required_version="3.8"
+    required_version="3.12"
     
     if [ "$(printf '%s\n' "$required_version" "$python_version" | sort -V | head -n1)" = "$required_version" ]; then
         log_success "Python $python_version 版本检查通过"

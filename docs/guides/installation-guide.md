@@ -5,7 +5,7 @@
 ## 系统要求
 
 ### 基础要求
-- **Python**: 3.8 或更高版本
+- **Python**: 3.12 或更高版本
 - **操作系统**: Linux, macOS, Windows
 - **内存**: 至少 2GB RAM
 - **存储**: 至少 500MB 可用空间
@@ -53,7 +53,7 @@ which python  # 应该显示 .venv/bin/python
 
 ```bash
 # 创建conda环境
-conda create -n pytemplate python=3.8
+conda create -n pytemplate python=3.12
 conda activate pytemplate
 ```
 
@@ -61,8 +61,8 @@ conda activate pytemplate
 
 ```bash
 # 安装特定Python版本
-pyenv install 3.8.10
-pyenv local 3.8.10
+pyenv install 3.12.6
+pyenv local 3.12.6
 
 # 创建虚拟环境
 python -m venv .venv
